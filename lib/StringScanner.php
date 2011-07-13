@@ -82,7 +82,6 @@ class StringScanner
     } else {
       $this->match_string = $this->matches[0];
       $this->match_length = strlen($this->match_string);
-      $this
       return $this->match_length;
     }
   }
