@@ -1,0 +1,3 @@
+[submodule "vendor/simpletest"]
+	path = vendor/simpletest
+	url = https://github.com/wesen/php-simpletest.git
