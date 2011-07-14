@@ -8,14 +8,134 @@
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
-class Mustache {
+require_once(dirname(__FILE__).'/Context.php');
+require_once(dirname(__FILE__).'/Template.php');
+require_once(dirname(__FILE__).'/helpers.php');
+
+class Mustache implements \ArrayAccess {
+  protected $raiseOnContextMiss = false;
+
+  protected $templateName = null;
+  protected $templatePath = ".";
+  protected $templateExtension = "mustache";
+  protected $templateFile = null;
+
+  protected $context = null;
+  protected $template = null;
+    
   public function __construct() {
+    $this->templateName = null;
     $this->templatePath = ".";
     $this->templateExtension = "mustache";
     $this->raiseOnContextMiss = false;
+
+    $this->templateFile = null;
+    $this->context = null;
+    $this->template = null;
   }
 
-  public function render() {
+  /***************************************************************************
+   *
+   * Getters and Setters
+   *
+   ***************************************************************************/
+
+  /** template path **/
+  public function getTemplatePath() {
+    return $this->templatePath;
+  }
+
+  public function setTemplatePath($path) {
+    $this->templatePath = $path;
+    $this->template = null;
+  }
+
+  /** template path **/
+  public function getTemplateExtension() {
+    return $this->templateExtension;
+  }
+
+  public function setTemplateExtension($extension) {
+    $this->templateExtension = $extension;
+    $this->template = null;
+  }
+  
+  /** template name **/
+  public function getTemplateName() {
+    if ($this->templateName == null) {
+      $this->templateName = Mustache::underscore(get_class_name($this));
+    }
+    return $this->templateName;
+  }
+
+  public function setTemplateName($name) {
+    $this->templateName = $name;
+    $this->template = null;
+  }
+
+  /** template file **/
+  public function getTemplateFile() {
+    if ($this->templateFile == null) {
+      $this->templateFile = $this->getTemplatePath()."/".$this->getTemplateName().".".$this->getTemplateExtension();
+    }
+    return $this->templateFile;
+  }
+
+  public function setTemplateFile($file) {
+    $this->templateFile = $file;
+    $this->template = null;
+  }
+
+  /** template itself **/
+  public function getTemplate() {
+    if ($this->template == null) {
+      $this->template = new Mustache\Template(file_get_contents($this->templateFile));
+    }
+    return $this->template;
+  }
+
+  public function setTemplate($template) {
+    if (is_string($template)) {
+      $this->template = new Mustache\Template($template);
+    } else {
+      $this->template = $template;
+    }
+  }
+
+  /** context **/
+  public function getContext() {
+    if ($this->context == null) {
+      $this->context = new Mustache\Context($this);
+    } 
+    return $this->context;
+  }
+
+  /***************************************************************************
+   *
+   * Mustache methods
+   *
+   ***************************************************************************/
+
+  public function render($data = null, $context = null) {
+    if ($data == null) {
+      $data = $this->getTemplate();
+    } else {
+      if (is_string($data)) {
+        $data = new Mustache\Template($data);
+      }
+    }
+
+    if ($context == null) {
+      return $data->render($this->getContext());
+    } else {
+      try {
+        $this->getContext()->push($context);
+        return $data->render($this->getContext());
+      } catch (Exception $e) {
+        $this->getContext()->pop();
+        throw $e;
+      }
+    }
   }
 
   /**
@@ -23,6 +143,7 @@ class Mustache {
    * render the file as a template.
    **/
   public function renderFile($name, $context = array()) {
+    return $this->render($this->partial($name), $context);
   }
 
   /**
@@ -82,6 +203,32 @@ class Mustache {
     self::$__uncamelizeHash[$orig] = $name;
     return $name;
   }
+
+
+  /***************************************************************************
+   *
+   * Array access methods are mapped to context object
+   *
+   ***************************************************************************/
+  /**
+   * Implements the array access methods.
+   **/
+  function offsetExists( $offset ) {
+    return $this->getContext()->offsetExists($offset);
+  }
+
+  function offsetGet ( $offset ) {
+    return $this->getContext()->offsetGet($offset);
+  }
+
+  function offsetSet ( $offset ,  $value ) {
+    return $this->getContext()->offsetSet($offset, $value);
+  }
+
+  function offsetUnset ( $offset ) {
+    return $this->getContext()->offsetUnSet($offset, $value);
+  }  
+
 }
 
 ?>
