@@ -1,5 +1,4 @@
 <?php
-
 /*
  * Mustache PHP Compiler - Test the Mustache class
  *
@@ -12,6 +11,12 @@ require_once(dirname(__FILE__)."/../Mustache.php");
 function __filename($file) {
   return dirname(__FILE__).'/files/'.$file;
 }
+
+
+require_once(dirname(__FILE__).'/classDefs.php');
+
+class FoobarBlorg extends Mustache {
+};
 
 class TestMustache extends UnitTestCase {
 
@@ -44,6 +49,31 @@ class TestMustache extends UnitTestCase {
 
     $res = Mustache::underscore("FoobarBlorgBla");
     $this->assertEqual($res, "foobar_blorg_bla");
+  }
+
+  function testClassName() {
+    $res = new Mustache();
+    $this->assertEqual($res->getTemplateName(), "mustache");
+
+    $res = new FoobarBlorg();
+    $this->assertEqual($res->getTemplateName(), "foobar_blorg");
+
+    $res = new FooBar\Bla\FoobarBlorgBla();
+    $this->assertEqual($res->getTemplateName(), "foobar_blorg_bla");
+  }
+
+  function testSetters() {
+    $res = new Mustache();
+    $this->assertEqual($res->getTemplatePath(), ".");
+    $this->assertEqual($res->getTemplateName(), "mustache");
+    $this->assertEqual($res->getTemplateExtension(), "mustache");
+    $this->assertEqual($res->getTemplateFile(), "./mustache.mustache");
+
+    $res = new FoobarBlorg();
+    $this->assertEqual($res->getTemplatePath(), ".");
+    $this->assertEqual($res->getTemplateName(), "foobar_blorg");
+    $this->assertEqual($res->getTemplateExtension(), "mustache");
+    $this->assertEqual($res->getTemplateFile(), "./foobar_blorg.mustache");
   }
 };
 
