@@ -19,11 +19,21 @@ class StringScanner implements \ArrayAccess {
     $this->reset();
   }
 
+  /** Helper function to quickly create a regexp matching the string exactly. **/
+  static function escape($str) {
+    return preg_quote($str);
+  }
+
   /** Resets the string scanner to the start position. **/
   function reset() {
     $this->pos = 0;
     $this->match_length = null;
     $this->matches = array();
+  }
+
+  /** Goes to the end of the string, marking it as finished. **/
+  function clear() {
+    $this->pos = $this->length;
   }
 
   function pushState() {
@@ -72,6 +82,11 @@ class StringScanner implements \ArrayAccess {
     return max(0, $this->length - $this->pos);
   }
 
+  /** Return what has already been scanned. **/
+  function getScanned() {
+    return substr($this->string, 0, $this->pos);
+  }
+
   /***************************************************************************
    *
    * Matching functions
@@ -102,7 +117,7 @@ class StringScanner implements \ArrayAccess {
   }
 
   function wasMatched() {
-    return $this[0] != null;
+    return $this[0] !== null;
   }
 
   function getMatchedSize() {
@@ -207,7 +222,7 @@ class StringScanner implements \ArrayAccess {
    **/
   function skip($re) {
     $res = $this->scan($re);
-    if ($res != null) {
+    if ($res !== null) {
       return $this->match_length;
     } else {
       return null;
@@ -255,6 +270,22 @@ class StringScanner implements \ArrayAccess {
       $this->matches = $this->prev_matches;
     }
   }
+
+  /**
+   * Scans the string until the pattern is matched. Returns the
+   * substring *excluding* the end of the match, advancing the scan
+   * pointer to that location. If there is no match, nil is returned.
+   **/
+  public function scanUntilExclusive($re) {
+    $pos = $this->pos;
+    if ($this->scanUntil($re) !== null) {
+      $this->pos -= $this->getMatchedSize();
+      return substr($this->getPreMatch(), $pos);
+    } else {
+      return null;
+    }
+  }
+  
 
   /**
    * Implements the array access methods.
