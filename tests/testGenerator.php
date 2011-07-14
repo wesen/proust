@@ -53,8 +53,6 @@ class TestGenerator extends UnitTestCase {
   function testSection() {
     $res = $this->g->compile(array(":mustache", ":section", "foo", array(":static", "bla")));
     $ctx = $this->c;
-    print_r($res);
-    echo "eval: ".eval($res)."\n";
     $this->assertEqual(eval($res), "");
 
     $ctx->push(array("foo" => true));
@@ -86,6 +84,30 @@ class TestGenerator extends UnitTestCase {
     $ctx->push(array("foo" => array()));
     $this->assertEqual(eval($res), "bla");
     $ctx->pop();
+  }
+
+  function testEtag() {
+    $ctx = $this->c;
+    $ctx->push(array("foo" => "_foo_",
+                     "bla" => "_bla_"));
+    $res = $this->g->compile(array(":multi",
+                                   array(":mustache", ":etag", "foo"),
+                                   array(":mustache", ":etag", "bla")));
+    $str = eval($res);
+    $this->assertEqual($str, "_foo__bla_");
+  }
+
+  function testIteration() {
+    $arr = array("foo" => "_foo_",
+                 "bla" => "_bla_");
+    $ctx = $this->c;
+    $ctx->push(array("array" => $arr));
+    $res = $this->g->compile(array(":mustache", ":section", "array", array(":multi",
+                                                                           array(":mustache", ":etag", "bla"),
+                                                                           array(":mustache", ":etag", "foo")
+                                                                           )));
+    $str = eval($res);
+    $this->assertEqual($str, "_bla__foo_");
   }
 };
 
