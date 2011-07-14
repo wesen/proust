@@ -22,9 +22,9 @@ class SyntaxError extends \Exception {
     $this->message = $message;
     $this->lineno = $pos["lineno"];
     $this->column = $pos["column"];
-    $this->line = $pos["line"];
-    $stripped_line = trim($this->line);
-    $stripped_column = $this->column - (strlen($this->line) - strlen(ltrim($this->line)));
+    $this->lastLine = $pos["line"];
+    $stripped_line = trim($this->lastLine);
+    $stripped_column = $this->column - (strlen($this->lastLine) - strlen(ltrim($this->lastLine)));
     $whitespace = str_pad('', $stripped_column);
     $foo = <<<EOD
 $this->message
@@ -33,7 +33,7 @@ $this->message
     ${whitespace}^
 EOD;
 
-    parent::__construct($foo);
+parent::__construct($foo, 0, NULL);
   }
 };
 
@@ -42,7 +42,7 @@ class Parser {
   static $SKIP_WHITESPACE = array('#', '^', '/');
 
   /** allowed content in a tag name. **/
-  static $ALLOWED_CONTENT = '(\w|[\?\!\/\-])*';
+  static $ALLOWED_CONTENT = '(\w|[\?\!\/\_\-])*';
 
   /** These type of tags allow any content, the rest only allow ALLOWED_CONTENT. **/
   static $ANY_CONTENT = array('!', '=');
@@ -72,7 +72,7 @@ class Parser {
     /* there still are opened sections */
     if (count($this->sections) > 0) {
       $section = array_pop($this->sections);
-      throw new SyntaxError("Unclosed section ".$section["type"], $section["pos"]);
+      throw new SyntaxError("Unclosed section ".$section["section"], $section["position"]);
     }
 
 
@@ -87,7 +87,7 @@ class Parser {
 
     /* Since {{= rewrite ctag, we store the ctag which should be used when parsing this specific tag. **/
     $currentCtag = $this->ctag;
-    $type = $this->scanner->scan("[#^\/=!<>^{]");
+    $type = $this->scanner->scan("[#^\/=!<>^{&]");
 
     $this->scanner->skip("\s*");
 
@@ -104,12 +104,35 @@ class Parser {
 
     switch ($type) {
     case '#':
+      $block = array(":multi");
+      array_push($this->result, array(":mustache", ":section", $content, &$block));
+      array_push($this->sections, array("section" => $content,
+                                        "position" => $this->getPosition(),
+                                        "result" => &$this->result));
+      $this->result = &$block;
       break;
 
     case '^':
+      $block = array(":multi");
+      array_push($this->result, array(":mustache", ":inverted_section", $content, &$block));
+      array_push($this->sections, array("section" => $content,
+                                        "position" => $this->getPosition(),
+                                        "result" => &$this->result));
+      $this->result = &$block;
       break;
 
     case '/':
+      $section = array_pop($this->sections);
+
+      if ($section === null) {
+        throw new SyntaxError("Closing unopened section $content", $this->getPosition());
+      }
+      
+      if ($section["section"] !== $content) {
+        throw new SyntaxError("Unclosed section ".$section["section"], $this->getPosition());
+      }
+      
+      $this->result = &$section["result"];
       break;
 
     case '!':
@@ -117,14 +140,22 @@ class Parser {
       break;
 
     case '=':
+      $separators = explode(' ', $content);
+      $this->otag = $separators[0];
+      $this->ctag = $separators[1];
       break;
 
     case '<':
     case '>':
+      array_push($this->result, array(":mustache", ":partial", $content));
       break;
 
     case '{':
     case '&':
+      if ($type == "{") {
+        $type = "}"; // for balancing purposes
+      }
+      array_push($this->result, array(":mustache", ":utag", $content));
       break;
 
     default:
@@ -164,7 +195,7 @@ class Parser {
 
   /** Returns array("lineno" => .., "column" => .., "line" => ..); **/
   public function getPosition() {
-    $rest = rtrim($this->scanner->checkUntil("\n|\Z"));
+    $rest = rtrim($this->scanner->checkUntil('\n|\v'));
     $parsed = $this->scanner->getScanned();
     $lines = explode("\n", $parsed);
     
