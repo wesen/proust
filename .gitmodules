@@ -1,3 +1,9 @@
 [submodule "vendor/simpletest"]
 	path = vendor/simpletest
 	url = https://github.com/wesen/php-simpletest.git
+[submodule "spec"]
+	path = spec
+	url = git://github.com/mustache/spec.git
+[submodule "vendor/spyc"]
+	path = vendor/spyc
+	url = git://github.com/tekimaki/spyc.git
