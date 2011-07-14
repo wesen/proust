@@ -243,6 +243,31 @@ class TestStringScanner extends UnitTestCase {
     $this->assertEqual($sc->rest(), " blorg bla");
     $this->assertEqual($sc->getMatched(), "foobar");
   }
+
+  function testSearchFull() {
+    $sc = new StringScanner("foobar blorg bla");
+
+    $res = $sc->searchFull("hahaha", false, false);
+    $this->assertEqual($res, null);
+
+    $res = $sc->searchFull("bar", false, false);
+    $this->assertEqual($res, 6);
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+    $this->assertEqual($sc->getMatched(), "bar");
+
+    $res = $sc->searchFull("bar", true, false);
+    $this->assertEqual($res, "foobar");
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+    $this->assertEqual($sc->getMatched(), "bar");
+
+    $res = $sc->searchFull("(bar)(\s+)", true, true);
+    $this->assertEqual($res, "foobar ");
+    $this->assertEqual($sc->rest(), "blorg bla");
+    $this->assertEqual($sc->getMatched(), "bar ");
+    $this->assertEqual($sc[0], "bar ");
+    $this->assertEqual($sc[1], "bar");
+    $this->assertEqual($sc[2], " ");
+  }
   
 };
 
