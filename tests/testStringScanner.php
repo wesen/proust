@@ -5,7 +5,19 @@ require_once("../Mustache.php");
 
 class TestStringScanner extends UnitTestCase {
   function testCreation() {
-    $sc = new StringScanner("");
+    $sc = new StringScanner("foo");
+    $this->assertEqual($sc->wasMatched(), false);
+    $this->assertEqual($sc->getMatched(), null);
+    $this->assertEqual($sc->getPostMatch(), null);
+    $this->assertEqual($sc->getPreMatch(), null);
+    $this->assertEqual($sc->getMatchedSize(), 0);
+    $this->assertEqual($sc[0], null);
+    $this->assertEqual($sc[99], null);
+    $this->assertEqual($sc->isBol(), true);
+    $this->assertEqual($sc->pos, 0);
+    $this->assertEqual($sc->rest(), "foo");
+    $this->assertEqual($sc->isEos(), false);
+    $this->assertEqual($sc->getRestSize(), 3);
   }
 
   function testGetChar() {
@@ -336,6 +348,41 @@ class TestStringScanner extends UnitTestCase {
     $this->assertFalse($sc->isEos());
     $this->assertEqual($sc->rest(), "foobar blorg bla");
     $this->assertEqual($sc->getMatched(), "bla");
+  }
+
+  function testUnscan() {
+    $sc = new StringScanner("foobar blorg bla");
+    $res = $sc->scan("foo(bar) (\w+)");
+    $this->assertEqual($res, "foobar blorg");
+    $this->assertEqual($sc[0], "foobar blorg");
+    $this->assertEqual($sc[1], "bar");
+    $this->assertEqual($sc[2], "blorg");
+    $this->assertEqual($sc->rest(), " bla");
+    $this->assertEqual($sc->wasMatched(), true);
+
+    $sc->unScan();
+    $this->assertEqual($sc->pos, 0);
+    $this->assertEqual($sc[0], null);
+    
+    try {
+      $sc->unScan();
+    } catch (Exception $e) {
+      $this->assertEqual($e->getMessage(), "unScan failed, previous match had failed");
+    }
+
+    $res = $sc->isMatch("foo");
+    $this->assertEqual($sc[0], "foo");
+
+    $res = $sc->isMatch("foobar");
+    $this->assertEqual($sc[0], "foobar");
+    $sc->unScan();
+    $this->assertEqual($sc[0], "foo");
+
+    $res = $sc->scan("foobar ");
+    $this->assertEqual($sc->rest(), "blorg bla");
+    $sc->unScan();
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+
   }
   
 };
