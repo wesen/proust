@@ -19,6 +19,10 @@ class Generator {
   public static function escape($str) {
     return str_replace("'", "\\'", $str);
   }
+
+  public static function isAssoc($a) {
+    $a = array_keys($a); return ($a != array_keys($a));
+  }
   
   /**
    * Given an array of tokens, convert them into php code. In
@@ -72,13 +76,13 @@ class Generator {
 \$f = function () use (\$ctx) { $code };
 \$v = \$ctx['$name'];
 if (\$v || (\$v === 0)) {
-  if (\$v == true) {
+  if (\$v === true) {
     \$f();
   } else if (is_callable(\$v)) {
     ob_start(); \$f(); \$s = ob_get_clean();
     echo \$v(\$s);
   } else {
-    if (!(is_array(\$v) || \$v instanceof \\Traversable)) {
+    if (!(is_array(\$v) || \$v instanceof \\Traversable) || Mustache\Generator::isAssoc(\$v)) {
       \$v = array(\$v);
     }
     foreach (\$v as \$_v) {
@@ -99,12 +103,15 @@ return $res;
   }
 
   public function on_partial($name) {
+    return "\$ctx->partial('$name');";
   }
 
   public function on_utag($name) {
+    return "echo \$ctx['$name'];";
   }
 
   public function on_etag($name) {
+    return "echo htmlspecialchars(\$ctx['$name']);";
   }
 }
 
