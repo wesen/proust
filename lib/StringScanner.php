@@ -75,22 +75,20 @@ class StringScanner implements \ArrayAccess
     $string = $this->rest();
     $res = preg_match("/^$re/", $string, $this->matches, PREG_OFFSET_CAPTURE);
     if ($res == 0) {
-      $this->match_string = null;
       $this->match_length = null;
       return null;
     } else {
-      $this->match_string = $this->matches[0][0];
-      $this->match_length = strlen($this->match_string);
+      $this->match_length = strlen($this[0]);
       return $this->match_length;
     }
   }
 
   function getMatched() {
-    return $this->match_string;
+    return $this[0];
   }
 
   function wasMatched() {
-    return $this->match_string != null;
+    return $this[0] != null;
   }
 
   function getMatchedSize() {
@@ -146,7 +144,7 @@ class StringScanner implements \ArrayAccess
         $this->pos += $this->match_length;
       }
       if ($returnStringP) {
-        return $this->match_string;
+        return $this[0];
       } else {
         return $res > 0;
       }
@@ -167,8 +165,7 @@ class StringScanner implements \ArrayAccess
     $res = preg_match("/$re/", $string, $this->matches, PREG_OFFSET_CAPTURE);
     if ($res) {
       $start_pos = $this->matches[0][1];
-      $this->match_string = $this->matches[0][0];
-      $this->match_length = strlen($this->match_string);
+      $this->match_length = strlen($this[0]);
 
       if ($advanceScanPointerP) {
         $this->pos += $start_pos + $this->match_length;
@@ -229,11 +226,15 @@ class StringScanner implements \ArrayAccess
    * Implements the array access methods.
    **/
   function offsetExists( $offset ) {
-    return isset($this->matches[$offset]);
+    return ($offset == 0) || isset($this->matches[$offset]);
   }
 
   function offsetGet ( $offset ) {
-    return $this->matches[$offset][0];
+    if (isset($this->matches[$offset])) {
+      return $this->matches[$offset][0];
+    } else {
+      return null;
+    }
   }
 
   function offsetSet ( $offset ,  $value ) {
