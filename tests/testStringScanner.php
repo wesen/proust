@@ -268,6 +268,75 @@ class TestStringScanner extends UnitTestCase {
     $this->assertEqual($sc[1], "bar");
     $this->assertEqual($sc[2], " ");
   }
+
+  function testSkip() {
+    $sc = new StringScanner("foobar blorg bla");
+    $res = $sc->skip("hihi");
+    $this->assertEqual($res, null);
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+
+    $res = $sc->skip("\w+\s+");
+    $this->assertEqual($res, 7);
+    $this->assertEqual($sc->rest(), "blorg bla");
+  }
+
+  function testCheck() {
+    $sc = new StringScanner("foobarbaz");
+    $res = $sc->check("123");
+    $this->assertEqual($res, null);
+    $this->assertEqual($sc->rest(), "foobarbaz");
+
+    $res = $sc->check("foo");
+    $this->assertEqual($res, "foo");
+    $this->assertEqual($sc->rest(), "foobarbaz");
+
+    $sc = new StringScanner("foobar blorg bla");
+    $res = $sc->check("\w+");
+    $this->assertEqual($res, "foobar");
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+
+    $sc->pos += 6;
+    $res = $sc->check("\s+");
+    $this->assertEqual($res, " ");
+    $this->assertEqual($sc->rest(), " blorg bla");
+  }
+
+
+  function testCheckUntil() {
+    $sc = new StringScanner("foobar blorg bla");
+
+    $res = $sc->checkUntil("bar");
+    $this->assertEqual($res, "foobar");
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+    $this->assertEqual($sc->getMatched(), "bar");
+
+    $sc->pos += 6;
+    $res = $sc->checkUntil("\s+");
+    $this->assertEqual($res, " ");
+    $this->assertEqual($sc->rest(), " blorg bla");
+    $this->assertEqual($sc->getMatched(), " ");
+
+    $sc->pos += 1;
+    $res = $sc->checkUntil("(\w+) (\w+)");
+    $this->assertEqual($res, "blorg bla");
+    $this->assertFalse($sc->isEos());
+    $this->assertEqual($sc->rest(), "blorg bla");
+    $this->assertEqual($sc->getMatched(), "blorg bla");
+    $this->assertEqual($sc[0], "blorg bla");
+    $this->assertEqual($sc[1], "blorg");
+    $this->assertEqual($sc[2], "bla");
+
+    $sc = new StringScanner("foobar blorg bla");
+    $res = $sc->checkUntil("hihihi");
+    $this->assertEqual($res, null);
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+
+    $res = $sc->checkUntil("bl[ab]");
+    $this->assertEqual($res, "foobar blorg bla");
+    $this->assertFalse($sc->isEos());
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+    $this->assertEqual($sc->getMatched(), "bla");
+  }
   
 };
 
