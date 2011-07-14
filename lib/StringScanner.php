@@ -6,18 +6,29 @@
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
+class StringScannerException extends Exception {
+};
+
 class StringScanner implements \ArrayAccess
 {
   function StringScanner($str) {
     $this->string = $str;
-    $this->pos = 0;
     $this->length = strlen($str);
-    $this->matches = array();
+
+    $this->reset();
   }
 
   /** Resets the string scanner to the start position. **/
   function reset() {
     $this->pos = 0;
+    $this->match_length = null;
+    $this->matches = array();
+  }
+
+  function pushState() {
+    $this->prev_pos = $this->pos;
+    $this->prev_match_length = $this->match_length;
+    $this->prev_matches = $this->matches;
   }
 
   /** Returns the next char and advances the read pointer. **/
@@ -72,6 +83,8 @@ class StringScanner implements \ArrayAccess
    * is not advanced.
    **/
   function isMatch($re) {
+    $this->pushState();
+    
     $string = $this->rest();
     $res = preg_match("/^$re/", $string, $this->matches, PREG_OFFSET_CAPTURE);
     if ($res == 0) {
@@ -138,6 +151,8 @@ class StringScanner implements \ArrayAccess
    * Affects the match register.
    **/
   function scanFull($re, $returnStringP = false, $advanceScanPointerP = false) {
+    $this->pushState();
+    
     $res = $this->isMatch($re);
     if ($res) {
       if ($advanceScanPointerP) {
@@ -161,6 +176,8 @@ class StringScanner implements \ArrayAccess
    * Affects the match register.
    **/
   function searchFull($re, $returnStringP = false, $advanceScanPointerP = false) {
+    $this->pushState();
+    
     $string = $this->rest();
     $res = preg_match("/$re/", $string, $this->matches, PREG_OFFSET_CAPTURE);
     if ($res) {
@@ -219,6 +236,7 @@ class StringScanner implements \ArrayAccess
    * scan_until will return a value.
    **/
   function doesExist($re) {
+    return $this->searchFull($re, false, false);
   }
   
 
@@ -228,13 +246,20 @@ class StringScanner implements \ArrayAccess
    * operation.
    **/
   function unScan() {
+    if (!isset($this->matches[0])) {
+      throw new StringScannerException('unScan failed, previous match had failed');
+    } else {
+      $this->pos = $this->prev_pos;
+      $this->match_length = $this->prev_match_length;
+      $this->matches = $this->prev_matches;
+    }
   }
 
   /**
    * Implements the array access methods.
    **/
   function offsetExists( $offset ) {
-    return ($offset == 0) || isset($this->matches[$offset]);
+    return true;
   }
 
   function offsetGet ( $offset ) {
