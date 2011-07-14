@@ -373,6 +373,7 @@ class TestStringScanner extends UnitTestCase {
     
     try {
       $sc->unScan();
+      $this->assertFalse(true);
     } catch (Exception $e) {
       $this->assertEqual($e->getMessage(), "unScan failed, previous match had failed");
     }
@@ -403,7 +404,7 @@ class TestStringScanner extends UnitTestCase {
   }
 
   function testEscape() {
-    $sc = new StringScanner("^^^()$$()[]");
+    $sc = new StringScanner("^^^()$$()[]//");
     $res = $sc->isMatch(StringScanner::escape("^^"));
     $this->assertEqual($res, 2);
     $this->assertEqual($sc[0], "^^");
@@ -411,6 +412,15 @@ class TestStringScanner extends UnitTestCase {
     $res = $sc->scanUntil(StringScanner::escape("$$"));
     $this->assertEqual($res, "^^^()$$");
     $this->assertEqual($sc[0], "$$");
+
+    $res = $sc->scanUntil(StringScanner::escape("/"));
+    $this->assertEqual($res, "()[]/");
+    $this->assertEqual($sc[0], "/");
+
+    $sc->unScan();
+    $res = $sc->scanUntil(StringScanner::escape("//"));
+    $this->assertEqual($res, "()[]//");
+    $this->assertEqual($sc[0], "//");
   }
 
   function testGetScanned() {
