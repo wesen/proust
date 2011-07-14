@@ -22,6 +22,7 @@ class Context implements \ArrayAccess {
   protected $stack = null;
   
   public function __construct($_mustache) {
+    $this->mustache = $_mustache;
     $this->stack = array($_mustache);
   }
 
@@ -47,7 +48,7 @@ class Context implements \ArrayAccess {
   public function fetch($name, $default = '__raise') {
     foreach ($this->stack as $a) {
       /* avoid recursion */
-      if ($a == $this) {
+      if ($a == $this->mustache) {
         continue;
       }
 
@@ -60,12 +61,13 @@ class Context implements \ArrayAccess {
       } elseif (method_exists($a, $name)) {
         return $a->$name();
       }
+    }
+    
 
-      if (($default == '__raise') || $this->getMustacheInStack()->raiseOnContextMiss) {
-        throw new ContextMissException("Can't find $name in ".print_r($this->stack, true));
-      } else {
-        return $default;
-      }
+    if (($default == '__raise') || $this->getMustacheInStack()->raiseOnContextMiss) {
+      throw new ContextMissException("Can't find $name in ".print_r($this->stack, true));
+    } else {
+      return $default;
     }
   }
 
