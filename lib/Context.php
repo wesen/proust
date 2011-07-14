@@ -18,6 +18,15 @@ namespace Mustache;
 class ContextMissException extends \Exception {
 };
 
+function methodCallClosure($a, $name) {
+  return function ($text = "") use ($a, $name) {
+    //    echo "a: '$a'";
+    print_r($a);
+    //    echo $a->foobar();
+    //    return $a->$name($text);
+  };
+}
+
 class Context implements \ArrayAccess {
   protected $stack = null;
   
@@ -59,7 +68,9 @@ class Context implements \ArrayAccess {
           return $a[(string)$name];
         }
       } elseif (method_exists($a, $name)) {
-        return $a->$name();
+        return function ($text = "") use ($a, $name) {
+          return $a->$name($text);
+        };
       }
     }
     

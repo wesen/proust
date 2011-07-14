@@ -112,8 +112,10 @@ class TestContext extends UnitTestCase {
     $ctx = $this->ctx;
 
     $ctx->push(new Foobar());
-    $this->assertEqual($ctx['a'], 5);
-    $this->assertEqual($ctx['c'], 7);
+    $res = $ctx['a'];
+    $this->assertEqual($res(), 5);
+    $res = $ctx['c'];
+    $this->assertEqual($res(), 7);
   }
 };
 
