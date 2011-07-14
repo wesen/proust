@@ -20,7 +20,7 @@ class Foobar {
 
 class TestContext extends UnitTestCase {
   function assertStartsWith($str, $prefix) {
-    return strncmp($str, $prefix, strlen($prefix)) == 0;
+    $this->assertEqual(substr($str, 0, strlen($prefix)), $prefix);
   }
 
   function setUp() {
@@ -33,12 +33,14 @@ class TestContext extends UnitTestCase {
     
     try {
       $res = $ctx['foo'];
+      $this->assertFalse(true);
     } catch (Mustache\ContextMissException $e) {
       $this->assertStartsWith($e->getMessage(), "Can't find foo");
     }
 
     try {
       $res = $ctx->fetch('foo');
+      $this->assertFalse(true);
     } catch (Mustache\ContextMissException $e) {
       $this->assertStartsWith($e->getMessage(), "Can't find foo");
     }
@@ -50,6 +52,7 @@ class TestContext extends UnitTestCase {
     $this->m->raiseOnContextMiss = true;
     try {
       $res = $ctx->fetch("foo", "default");
+      $this->assertFalse(true);
     } catch (Mustache\ContextMissException $e) {
       $this->assertStartsWith($e->getMessage(), "Can't find foo");
     }
