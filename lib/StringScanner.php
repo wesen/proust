@@ -11,8 +11,7 @@
 class StringScannerException extends Exception {
 };
 
-class StringScanner implements \ArrayAccess
-{
+class StringScanner implements \ArrayAccess {
   function StringScanner($str) {
     $this->string = $str;
     $this->length = strlen($str);
