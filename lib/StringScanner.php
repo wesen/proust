@@ -6,8 +6,7 @@
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
-// class StringScanner implements \ArrayAccess
-class StringScanner
+class StringScanner implements \ArrayAccess
 {
   function StringScanner($str) {
     $this->string = $str;
@@ -185,16 +184,31 @@ class StringScanner
   }
   
 
-  /** Access the n-th subgroup in the most recent match. **/
-  function getArrayCopy() {
-  }
-
   /**
    * Set the scan pointer to the previous position. Only one previous
    * position is remembered, and it changes with each scanning
    * operation.
    **/
   function unScan() {
+  }
+
+  /**
+   * Implements the array access methods.
+   **/
+  function offsetExists( $offset ) {
+    return isset($this->matches[$offset]);
+  }
+
+  function offsetGet ( $offset ) {
+    return $this->matches[$offset][0];
+  }
+
+  function offsetSet ( $offset ,  $value ) {
+    throw new Exception('StringScanner is readonly');
+  }
+
+  function offsetUnset ( $offset ) {
+    throw new Exception('StringScanner is readonly');
   }
 };
 
