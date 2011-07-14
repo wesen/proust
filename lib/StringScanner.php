@@ -21,7 +21,7 @@ class StringScanner implements \ArrayAccess {
 
   /** Helper function to quickly create a regexp matching the string exactly. **/
   static function escape($str) {
-    return preg_quote($str);
+    return preg_replace('/\//', '\/', preg_quote($str));
   }
 
   /** Resets the string scanner to the start position. **/
