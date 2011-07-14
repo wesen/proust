@@ -73,13 +73,13 @@ class StringScanner implements \ArrayAccess
    **/
   function isMatch($re) {
     $string = $this->rest();
-    $res = preg_match("/^$re/", $string, $this->matches);
+    $res = preg_match("/^$re/", $string, $this->matches, PREG_OFFSET_CAPTURE);
     if ($res == 0) {
       $this->match_length = null;
       $this->match_string = null;
       return null;
     } else {
-      $this->match_string = $this->matches[0];
+      $this->match_string = $this->matches[0][0];
       $this->match_length = strlen($this->match_string);
       return $this->match_length;
     }
@@ -119,6 +119,11 @@ class StringScanner implements \ArrayAccess
    * matched string. Otherwise, the scanner returns null.
    **/
   function scan($re) {
+    $res = $this->isMatch($re);
+    if ($res) {
+      $this->pos += $this->match_length;
+    }
+    return $this->match_string;
   }
 
   /**
@@ -128,6 +133,18 @@ class StringScanner implements \ArrayAccess
    * returned.
    **/
   function scanUntil($re) {
+    $string = $this->rest();
+    $res = preg_match("/$re/", $string, $this->matches, PREG_OFFSET_CAPTURE);
+    if ($res == 0) {
+      return null;
+    } else {
+      $start_pos = $this->matches[0][1];
+      $cur_pos = $this->pos;
+      $this->match_string = $this->matches[0][0];
+      $this->match_length = strlen($this->match_string);
+      $this->pos += $start_pos + $this->match_length;
+      return substr($string, 0, $start_pos + $this->match_length);
+    }
   }
 
   /**
@@ -138,6 +155,19 @@ class StringScanner implements \ArrayAccess
    * Affects the match register.
    **/
   function scanFull($re, $returnStringP = false, $advanceScanPointerP = false) {
+    $res = $this->isMatch($re);
+    if ($res) {
+      if ($advanceScanPointerP) {
+        $this->pos += $this->match_length;
+      }
+      if ($returnStringP) {
+        return $this->match_string;
+      } else {
+        return $res > 0;
+      }
+    } else {
+      return null;
+    }
   }
 
   /**
