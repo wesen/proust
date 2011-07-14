@@ -1,6 +1,6 @@
 <?php
 /*
- * Mustache PHP Compiler - Test the Mustache class
+ * Mustache PHP Compiler - Test the Parser class
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
@@ -267,6 +267,26 @@ class TestParser extends UnitTestCase {
     $res = $this->p->compile("{{&unescaped_stuff}}");
     $this->assertEqual($res, array(":multi",
                                    array(":mustache", ":utag", "unescaped_stuff")));
+  }
+
+  public function testLong() {
+    $res = $this->p->compile('Hello {{name}}
+You have just won ${{value}}!
+{{#in_ca}}
+ Well, ${{taxed_value}}, after taxes.
+{{/in_ca}}');
+    $this->assertEqual($res,
+                       array(":multi",
+                             array(":static", "Hello "),
+                             array(":mustache", ":etag", "name"),
+                             array(":static", "\nYou have just won $"),
+                             array(":mustache", ":etag", "value"),
+                             array(":static", "!\n"),
+                             array(":mustache", ":section", "in_ca",
+                                   array(":multi",
+                                         array(":static", "Well, $"),
+                                         array(":mustache", ":etag", "taxed_value"),
+                                         array(":static", ", after taxes.\n")))));
   }
 
 };
