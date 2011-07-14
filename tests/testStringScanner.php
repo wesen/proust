@@ -391,7 +391,58 @@ class TestStringScanner extends UnitTestCase {
     $this->assertEqual($sc->rest(), "foobar blorg bla");
 
   }
-  
+
+  function testScanUntilExclusive() {
+    $sc = new StringScanner("foobar blorg bla");
+    $res = $sc->scanUntilExclusive("hihi");
+    $this->assertEqual($res, null);
+
+    $res = $sc->scanUntilExclusive("bar");
+    $this->assertEqual($res, "foo");
+    $this->assertEqual($sc->rest(), "bar blorg bla");
+  }
+
+  function testEscape() {
+    $sc = new StringScanner("^^^()$$()[]");
+    $res = $sc->isMatch(StringScanner::escape("^^"));
+    $this->assertEqual($res, 2);
+    $this->assertEqual($sc[0], "^^");
+
+    $res = $sc->scanUntil(StringScanner::escape("$$"));
+    $this->assertEqual($res, "^^^()$$");
+    $this->assertEqual($sc[0], "$$");
+  }
+
+  function testGetScanned() {
+    $sc = new StringScanner("foobar blorg bla");
+    $res = $sc->getScanned();
+    $this->assertEqual($res, "");
+
+    $sc->scan("foobar");
+    $res = $sc->getScanned();
+    $this->assertEqual($res, "foobar");
+
+    $sc->scanUntil("rg");
+    $res = $sc->getScanned();
+    $this->assertEqual($res, "foobar blorg");
+  }
+
+  function testClear() {
+    $sc = new StringScanner("foobar blorg bla");
+    $sc->clear();
+    $this->assertTrue($sc->isEos());
+    $this->assertEqual($sc->pos, $sc->length);
+  }
+
+  function testOtag() {
+    $sc = new StringScanner("{{foo}}{{bla}}");
+    $res = $sc->scan("{{");
+    $this->assertEqual($res, "{{");
+    $this->assertEqual($sc->rest(), "foo}}{{bla}}");
+    $res = $sc->scan("[#^\/=!<>^{]");
+    $this->assertEqual($res, null);
+    $this->assertEqual($sc->rest(), "foo}}{{bla}}");
+  }
 };
 
 ?>
