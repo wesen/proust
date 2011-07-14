@@ -3,6 +3,8 @@
 /*
  * String Scanner implementation
  *
+ * This is a PHP implementation of the Ruby StringScanner object
+ *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
