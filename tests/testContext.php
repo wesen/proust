@@ -8,6 +8,16 @@
 require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
 require_once(dirname(__FILE__)."/../Mustache.php");
 
+class Foobar {
+  public function a() {
+    return 5;
+  }
+
+  public function c() {
+    return 7;
+  }
+};
+
 class TestContext extends UnitTestCase {
   function assertStartsWith($str, $prefix) {
     return strncmp($str, $prefix, strlen($prefix)) == 0;
@@ -34,6 +44,21 @@ class TestContext extends UnitTestCase {
     }
   }
 
+  function testRaise() {
+    $ctx = $this->ctx;
+
+    $this->m->raiseOnContextMiss = true;
+    try {
+      $res = $ctx->fetch("foo", "default");
+    } catch (Mustache\ContextMissException $e) {
+      $this->assertStartsWith($e->getMessage(), "Can't find foo");
+    }
+
+    $this->m->raiseOnContextMiss = false;
+    $res = $ctx->fetch("foo", "default");
+    $this->assertEqual($res, "default");
+  }
+
   function testDefault() {
     $ctx = $this->ctx;
 
@@ -46,6 +71,46 @@ class TestContext extends UnitTestCase {
 
     $ctx['bla'] = 1;
     $this->assertEqual($ctx['bla'], 1);
+  }
+
+  function testTwoValues() {
+    $ctx = $this->ctx;
+    $ctx->push(array("foo" => "bar",
+                     "blorg" => "bar2"));
+    $this->assertEqual($ctx["foo"], "bar");
+    $this->assertEqual($ctx["blorg"], "bar2");
+  }
+
+  function testPushPop() {
+    $ctx = $this->ctx;
+    $ctx->push(array("foo" => "bar",
+                     "blorg" => "bar2"));
+    $this->assertEqual($ctx["foo"], "bar");
+    $this->assertEqual($ctx["blorg"], "bar2");
+
+    $ctx->push(array("foo" => "bla"));
+    $this->assertEqual($ctx["foo"], "bla");
+    $this->assertEqual($ctx["blorg"], "bar2");
+
+    $ctx->push(array("blorg" => "bar3"));
+    $this->assertEqual($ctx["foo"], "bla");
+    $this->assertEqual($ctx["blorg"], "bar3");
+
+    $ctx->pop();
+    $this->assertEqual($ctx["foo"], "bla");
+    $this->assertEqual($ctx["blorg"], "bar2");
+
+    $ctx->pop();
+    $this->assertEqual($ctx["foo"], "bar");
+    $this->assertEqual($ctx["blorg"], "bar2");
+  }
+
+  function testMethod() {
+    $ctx = $this->ctx;
+
+    $ctx->push(new Foobar());
+    $this->assertEqual($ctx['a'], 5);
+    $this->assertEqual($ctx['c'], 7);
   }
 };
 
