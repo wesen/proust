@@ -32,6 +32,7 @@ class TestContext extends UnitTestCase {
     $ctx = $this->ctx;
     
     try {
+      $this->m->raiseOnContextMiss = true;
       $res = $ctx['foo'];
       $this->assertFalse(true);
     } catch (Mustache\ContextMissException $e) {
