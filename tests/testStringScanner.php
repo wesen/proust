@@ -159,6 +159,89 @@ class TestStringScanner extends UnitTestCase {
   }
 
   function testScan() {
+    $sc = new StringScanner("foobarbaz");
+    $res = $sc->scan("123");
+    $this->assertEqual($res, null);
+    $this->assertEqual($sc->rest(), "foobarbaz");
+
+    $res = $sc->scan("foo");
+    $this->assertEqual($res, "foo");
+    $this->assertEqual($sc->rest(), "barbaz");
+
+    $sc = new StringScanner("foobar blorg bla");
+    $res = $sc->scan("\w+");
+    $this->assertEqual($res, "foobar");
+    $this->assertEqual($sc->rest(), " blorg bla");
+
+    $res = $sc->scan("\s+");
+    $this->assertEqual($res, " ");
+    $this->assertEqual($sc->rest(), "blorg bla");
+  }
+
+  function testArrayAccess() {
+    $sc = new StringScanner("foobar blorg bla");
+
+    $res = $sc->scan("foo(\w+)(\s+)(\w+)g");
+    $this->assertEqual($res, "foobar blorg");
+    $this->assertEqual($sc->rest(), " bla");
+    $this->assertEqual($sc[0], "foobar blorg");
+    $this->assertEqual($sc[1], "bar");
+    $this->assertEqual($sc[2], " ");
+    $this->assertEqual($sc[3], "blor");
+  }
+
+  function testScanUntil() {
+    $sc = new StringScanner("foobar blorg bla");
+
+    $res = $sc->scanUntil("bar");
+    $this->assertEqual($res, "foobar");
+    $this->assertEqual($sc->pos, 6);
+    $this->assertEqual($sc->rest(), " blorg bla");
+    $this->assertEqual($sc->getMatched(), "bar");
+
+    $res = $sc->scanUntil("\s+");
+    $this->assertEqual($res, " ");
+    $this->assertEqual($sc->getMatched(), " ");
+
+    $res = $sc->scanUntil("(\w+) (\w+)");
+    $this->assertEqual($res, "blorg bla");
+    $this->assertTrue($sc->isEos());
+    $this->assertEqual($sc->getMatched(), "blorg bla");
+    $this->assertEqual($sc[0], "blorg bla");
+    $this->assertEqual($sc[1], "blorg");
+    $this->assertEqual($sc[2], "bla");
+
+    $sc = new StringScanner("foobar blorg bla");
+    $res = $sc->scanUntil("hihihi");
+    $this->assertEqual($res, null);
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+
+    $res = $sc->scanUntil("bl[ab]");
+    $this->assertEqual($res, "foobar blorg bla");
+    $this->assertTrue($sc->isEos());
+    $this->assertEqual($sc->getMatched(), "bla");
+  }
+
+  function testScanFull() {
+    $sc = new StringScanner("foobar blorg bla");
+    $res = $sc->scanFull("foo", false, false);
+    $this->assertEqual($res, true);
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+    $this->assertEqual($sc->getMatched(), "foo");
+
+    $res = $sc->scanFull("bla", false, false);
+    $this->assertEqual($res, null);
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+
+    $res = $sc->scanFull("foobar", true, false);
+    $this->assertEqual($res, "foobar");
+    $this->assertEqual($sc->rest(), "foobar blorg bla");
+    $this->assertEqual($sc->getMatched(), "foobar");
+
+    $res = $sc->scanFull("\w+", true, true);
+    $this->assertEqual($res, "foobar");
+    $this->assertEqual($sc->rest(), " blorg bla");
+    $this->assertEqual($sc->getMatched(), "foobar");
   }
   
 };
