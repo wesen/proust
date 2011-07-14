@@ -8,6 +8,7 @@ class MustacheTestSuite extends TestSuite {
     $this->TestSuite('All Mustache tests');
     $this->addFile("tests/testStringScanner.php");
     $this->addFile("tests/testMustache.php");
+    $this->addFile("tests/testContext.php");
   }
 };
 
