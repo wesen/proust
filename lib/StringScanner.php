@@ -188,6 +188,12 @@ class StringScanner implements \ArrayAccess
    * null is returned.
    **/
   function skip($re) {
+    $res = $this->scan($re);
+    if ($res != null) {
+      return $this->match_length;
+    } else {
+      return null;
+    }
   }
   
   /**
@@ -195,6 +201,7 @@ class StringScanner implements \ArrayAccess
    * the scan pointer. The match register is affected though.
    **/
   function check($re) {
+    return $this->scanFull($re, true, false);
   }
 
   /**
@@ -203,6 +210,7 @@ class StringScanner implements \ArrayAccess
    * though.
    **/
   function checkUntil($re) {
+    return $this->searchFull($re, true, false);
   }
 
   /**
