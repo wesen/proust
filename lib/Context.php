@@ -98,7 +98,7 @@ class Context implements \ArrayAccess {
   }
 
   function offsetGet ( $offset ) {
-    return $this->fetch($offset);
+    return $this->fetch($offset, null);
   }
 
   /** Add a value to the context. **/
