@@ -13,7 +13,7 @@ require_once(dirname(__FILE__).'/Template.php');
 require_once(dirname(__FILE__).'/helpers.php');
 
 class Mustache implements \ArrayAccess {
-  protected $raiseOnContextMiss = false;
+  public $raiseOnContextMiss = false;
 
   protected $templateName = null;
   protected $templatePath = ".";
