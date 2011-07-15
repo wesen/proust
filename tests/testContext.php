@@ -118,6 +118,39 @@ class TestContext extends UnitTestCase {
     $res = $ctx['c'];
     $this->assertEqual($res(), 7);
   }
+
+  function testRecursion() {
+    $ctx = $this->ctx;
+    $ctx->push(array("foo" => "bar"));
+    $this->assertEqual($ctx["foo"], "bar");
+
+    $ctx->push($ctx);
+    $this->assertEqual($ctx["foo"], "bar");
+
+    $ctx->push($ctx);
+    $this->assertEqual($ctx["foo"], "bar");
+
+    $ctx2 = new Mustache\Context($this->m);
+    $ctx2->push(array("foo" => "blorg"));
+    $ctx->push($ctx2);
+    $this->assertEqual($ctx["foo"], "blorg");
+
+    $ctx->push($ctx);
+    $this->assertEqual($ctx["foo"], "blorg");
+
+    $ctx->push($this->m);
+    $this->assertEqual($ctx["foo"], "blorg");
+
+    $ctx->pop();
+    $ctx->pop();
+    $ctx->pop();
+    $this->assertEqual($ctx["foo"], "bar");
+  }
+
+  function testPartials() {
+    /* XXX */
+  }
+
 };
 
 ?>
