@@ -29,10 +29,12 @@ function methodCallClosure($a, $name) {
 
 class Context implements \ArrayAccess {
   protected $stack = null;
+  protected $partialStack = null;
   
   public function __construct($_mustache) {
     $this->mustache = $_mustache;
     $this->stack = array($_mustache);
+    $this->partialStack = array();
   }
 
   public function getMustacheInStack() {
@@ -55,10 +57,20 @@ class Context implements \ArrayAccess {
   }
 
   public function partial($name) {
+    if (in_array($name, $this->partialStack)) {
+      return "";
+    }
+    array_push($this->partialStack, $name);
     $m = $this->getMustacheInStack();
     $partial = $m->partial($name);
-    debug_log("partial: ".print_r($partial, true), 'EVALUATION');
-    return $m->render($partial, $this);
+    $res = $this->render($partial);
+    array_pop($this->partialStack);
+    return $res;
+  }
+
+  public function render($string) {
+    $m = $this->getMustacheInStack();
+    return $m->render($string, $this);
   }
 
   public function fetch($name, $default = '__raise') {
