@@ -59,14 +59,14 @@ class TestContext extends UnitTestCase {
     }
 
     $this->m->raiseOnContextMiss = false;
-    $res = $ctx->fetch("foo", "default");
+    $res = $ctx->fetch("foo", false, "default");
     $this->assertEqual($res, "default");
   }
 
   function testDefault() {
     $ctx = $this->ctx;
 
-    $res = $ctx->fetch("foo", "default");
+    $res = $ctx->fetch("foo", false, "default");
     $this->assertEqual($res, "default");
   }
 
