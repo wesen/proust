@@ -131,6 +131,10 @@ class TestMustache extends UnitTestCase {
     $this->assertEqual($res, "1 2 3 4 5 ");
     
   }
+
+  function testPartial() {
+    /* XXX */
+  }
 };
 
 ?>

@@ -1,6 +1,7 @@
 TODO for Mustache PHP Compiler
 ------------------------------
 
+- cache compiled partials
 - implement view classes
 - implement specification testing
 - implement different compiler options (enable/disable lambdas for example)
