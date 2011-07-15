@@ -39,7 +39,8 @@ parent::__construct($foo, 0, NULL);
 
 class Parser {
   /** after these tags, all whitespace will be skipped. **/
-  static $SKIP_WHITESPACE = array('#', '^', '/', '!', '=');
+  static $SKIP_WHITESPACE_BEFORE = array('/', '!', '=');
+  static $SKIP_WHITESPACE = array('#', '^', '/', '!', '=', '>');
 
   /** lines where only these tags are present should be removed. **/
   static $STANDALONE_LINES = array('=', '!');
@@ -66,7 +67,7 @@ class Parser {
     debug_log("Starting parsing", 'PARSER');
     $this->sections = array();
     $this->result = array(":multi");
-    $this->linePos = 0;
+    $this->startOfLine = true;
     $this->scanner = new \StringScanner($src);
 
     while (!$this->scanner->isEos()) {
@@ -88,12 +89,14 @@ class Parser {
 
   /** Find {{mustaches}} and add them to the result array. **/
   public function scanTags() {
-    debug_log("scan current ".$this->getPosition().": line: '".$this->scanner->checkUntil('[^\v]+')."'", 'PARSER');
-    
-    if (!$this->scanner->scan(\StringScanner::escape($this->otag))) {
+    debug_log("scanning '".$this->scanner->rest()."'", 'PARSER');
+    if (!$this->scanner->scan("(\s*)".\StringScanner::escape($this->otag))) {
       return;
     }
 
+    $whitespace = $this->scanner[1];
+    
+    /* always have this start on a fresh line. */
     /* Since {{= rewrite ctag, we store the ctag which should be used when parsing this specific tag. **/
     $currentCtag = $this->ctag;
     $type = $this->scanner->scan("[#^\/=!<>^{&]");
@@ -107,8 +110,17 @@ class Parser {
       $content = $this->scanner->scan(self::$ALLOWED_CONTENT);
     }
 
+    debug_log("scanned tag $type$content", 'PARSER');
+
     if (empty($content)) {
       throw new SyntaxError("Illegal content in tag", $this->getPosition());
+    }
+
+    if (!in_array($type, self::$SKIP_WHITESPACE_BEFORE)) {
+      if (!empty($whitespace)) {
+        debug_log("adding beginning of line whitespace: '$whitespace'", 'PARSER');
+        array_push($this->result, array(":static", $whitespace));
+      }
     }
 
     switch ($type) {
@@ -183,31 +195,51 @@ class Parser {
     }
 
     if (in_array($type, self::$SKIP_WHITESPACE)) {
-      debug_log("skipping whitespace at: '".$this->scanner->checkUntil('[^\v]+')."'", 'PARSER');
-      $res = $this->scanner->skip('\n*');
-      debug_log("skipped : " + $res, 'PARSER');
+      if ($this->startOfLine) {
+        debug_log("skipping whitespace at: '".$this->scanner->checkUntil('[^\v]+')."'", 'PARSER');
+        $res = $this->scanner->skip('\h*\r?\n?');
+        debug_log("skipped : $res, rest: '".$this->scanner->rest()."'", 'PARSER');
+      }
+    } else {
     }
   }
 
   /** Try to find static text. **/
   public function scanText() {
+    /* XXX split here */
     $text = $this->scanner->scanUntilExclusive(\StringScanner::escape($this->otag));
+    
     if ($text === null) {
       /* Couldn't find any otag, which means the rest is just static text. */
       $text = $this->scanner->rest();
       $this->scanner->clear();
+    } else {
+      if (!empty($text)) {
+        $pos = strrpos($text, "\n");
+        if ($pos !== false) {
+          /* backtrack to position of last newline */
+          $backtrack = strlen($text) - $pos - 1;
+          $text = substr($text, 0, $pos + 1);
+          $this->scanner->pos -= $backtrack;
+          debug_log("start of line", 'PARSER');
+          $this->startOfLine = true;
+        } else {
+          $this->startOfLine = false;
+        }
+      } else {
+        $this->startOfLine = true;
+      }
     }
-
-    debug_log("add text '".print_r($text, true)."'", 'PARSER');
     
     if (!empty($text)) {
+      debug_log("add text '".print_r($text, true)."'", 'PARSER');
       array_push($this->result, array(":static", $text));
     }
   }
 
   /** Returns array("lineno" => .., "column" => .., "line" => ..); **/
   public function getPosition() {
-    $rest = rtrim($this->scanner->checkUntil('\n|\v'));
+    $rest = rtrim($this->scanner->checkUntil('\r?\n'));
     $parsed = $this->scanner->getScanned();
     $lines = explode("\n", $parsed);
     
