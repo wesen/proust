@@ -102,7 +102,8 @@ class StringScanner implements \ArrayAccess {
     $this->pushState();
     
     $string = $this->rest();
-    $res = preg_match("/^$re/", $string, $this->matches, PREG_OFFSET_CAPTURE);
+    $re = "/^$re/";
+    $res = preg_match($re, $string, $this->matches, PREG_OFFSET_CAPTURE);
     if ($res == 0) {
       $this->match_length = null;
       return null;
