@@ -6,3 +6,4 @@ TODO for Mustache PHP Compiler
 - implement specification testing
 - implement different compiler options (enable/disable lambdas for example)
 - speed up context lookup
+- add option to directly include partials into code of calling template
