@@ -108,7 +108,7 @@ return $res;
   }
 
   public function on_partial($name) {
-    return "\$ctx->partial('$name');";
+    return "echo \$ctx->partial('$name');";
   }
 
   public function on_utag($name) {
