@@ -20,8 +20,12 @@ class Generator {
     return str_replace("'", "\\'", $str);
   }
 
-  public static function isAssoc($a) {
-    $a = array_keys($a); return ($a != array_keys($a));
+  public static function isAssoc($array) {
+    foreach (array_keys($array) as $k => $v) {
+      if ($k !== $v)
+        return true;
+    }
+    return false;
   }
   
   /**
@@ -75,14 +79,10 @@ class Generator {
     $res = <<<EOD
 \$f = function () use (\$ctx) { $code };
 \$v = \$ctx['$name'];
+// echo "v: ".print_r(\$v, true)."\\n";
 if (\$v || (\$v === 0)) {
-  if (\$v === true) {
-    \$f();
-  } else if (is_callable(\$v)) {
-    ob_start(); \$f(); \$s = ob_get_clean();
-    echo \$v(\$s);
-  } else {
-    if (!(is_array(\$v) || \$v instanceof \\Traversable) || Mustache\Generator::isAssoc(\$v)) {
+  if (is_array(\$v) || \$v instanceof \\Traversable) {
+    if (Mustache\Generator::isAssoc(\$v)) {
       \$v = array(\$v);
     }
     foreach (\$v as \$_v) {
@@ -90,6 +90,11 @@ if (\$v || (\$v === 0)) {
       \$f();
       \$ctx->pop();
     }
+  } else if (is_callable(\$v)) {
+    ob_start(); \$f(); \$s = ob_get_clean();
+    echo \$v(\$s);
+  } else if (\$v) {
+    \$f();
   }
 }
 EOD;
