@@ -13,7 +13,6 @@ require_once(dirname(__FILE__).'/Generator.php');
 
 class Template {
   protected $data = "";
-  protected $compiled = null;
   
   public function __construct($_data) {
     $this->data = $_data;
@@ -21,12 +20,9 @@ class Template {
 
   public function render($context) {
     debug_log("current context ".print_r($context, true), 'COMPILER');
-    debug_log("render template ".print_r($this->data, true).", compiled: ".print_r($this->compiled, true), 'COMPILER');
-    if ($this->compiled == null) {
-      $this->code = $this->compile($this->data);
-      debug_log("template code ".print_r($this->code, true), 'COMPILER');
-      $this->compiled = eval("return function (\$ctx) { ".$this->code." };");
-    }
+    $this->code = $this->compile($this->data, $context);
+    debug_log("template code ".print_r($this->code, true), 'COMPILER');
+    $this->compiled = eval("return function (\$ctx) { ".$this->code." };");
 
     $f = $this->compiled;
     $res = $f($context);
@@ -34,21 +30,30 @@ class Template {
     return $res;
   }
 
-  public function compile($src = null) {
+  public function compile($src = null, $context = null) {
     if ($src == null) {
       $src = $this->data;
     }
     $generator = new Generator();
-    $tokens = $this->getTokens($src);
+    $tokens = $this->getTokens($src, $context);
     //    echo "tokens: ".print_r($tokens, true)."\n";
     return $generator->compile($tokens);
   }
 
-  public function getTokens($src = null) {
+  public function getTokens($src = null, $context = null) {
     if ($src == null) {
       $src = $this->data;
     }
     $parser = new Parser();
+    if ($context !== null) {
+      /* weird mixture of evaluation context and compilation context, but so it is. */
+      if ($context->otag !== null) {
+        $parser->otag = $context->otag;
+      }
+      if ($context->ctag !== null) {
+        $parser->ctag = $context->ctag;
+      }
+    }
     return $parser->compile($src);
   }
 };

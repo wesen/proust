@@ -164,6 +164,7 @@ class Parser {
       $separators = explode(' ', $content);
       $this->otag = $separators[0];
       $this->ctag = $separators[1];
+      array_push($this->result, array(":mustache", ":tag_change", $this->otag, $this->ctag));
       break;
 
     case '<':

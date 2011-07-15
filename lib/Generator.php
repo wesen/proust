@@ -118,6 +118,11 @@ return $res;
   public function on_etag($name) {
     return "echo htmlspecialchars(\$ctx->fetch('$name', true, null));";
   }
+
+  public function on_tag_change($otag, $ctag) {
+    return "\$ctx->setDelimiters('$otag', '$ctag');";
+    //return "";
+  }
 }
 
 ?>

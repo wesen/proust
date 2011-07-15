@@ -35,6 +35,8 @@ class Context implements \ArrayAccess {
     $this->mustache = $_mustache;
     $this->stack = array($_mustache);
     $this->partialStack = array();
+    $this->otag = null;
+    $this->ctag = null;
   }
 
   public function getMustacheInStack() {
@@ -60,12 +62,30 @@ class Context implements \ArrayAccess {
     if (in_array($name, $this->partialStack)) {
       return "";
     }
+
     array_push($this->partialStack, $name);
+
+    /* TODO check for already compiled partial with current ctag / otag */
+    
     $m = $this->getMustacheInStack();
     $partial = $m->partial($name);
+
+    // temporarily reset to default delimiters for immediate lambda return
+    $ctag = $this->ctag;
+    $otag = $this->otag;
+    $this->ctag = $this->otag = null;
     $res = $this->render($partial);
+    $this->ctag = $ctag;
+    $this->otag = $otag;
+    
     array_pop($this->partialStack);
+    
     return $res;
+  }
+
+  public function setDelimiters($otag, $ctag) {
+    $this->otag = $otag;
+    $this->ctag = $ctag;
   }
 
   public function render($string) {
@@ -94,7 +114,14 @@ class Context implements \ArrayAccess {
       }
       if ($res !== null) {
         if (is_callable($res) && $evalDirectly) {
-          return $this->render($res());
+          // temporarily reset to default delimiters for immediate lambda return
+          $ctag = $this->ctag;
+          $otag = $this->otag;
+          $this->ctag = $this->otag = null;
+          $str = $this->render($res());
+          $this->ctag = $ctag;
+          $this->otag = $otag;
+          return $str;
         } else {
           return $res;
         }
