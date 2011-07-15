@@ -21,25 +21,30 @@ class Template {
 
   public function render($context) {
     if ($this->compiled == null) {
-      $this->compiled = $this->compile($this->data);
+      $code = $this->compile($this->data);
+      //      echo "code: ".print_r($code, true)."\n";
+      $this->compiled = eval("return function (\$ctx) { $code };");
     }
-    
-    return $this->compiled($context);
+
+    $f = $this->compiled;
+    return $f($context);
   }
 
   public function compile($src = null) {
     if ($src == null) {
       $src = $this->data;
     }
-    $generator = new Mustache\Generator();
-    return $generator->compile($this->getTokens($src));
+    $generator = new Generator();
+    $tokens = $this->getTokens($src);
+    //    echo "tokens: ".print_r($tokens, true)."\n";
+    return $generator->compile($tokens);
   }
 
   public function getTokens($src = null) {
     if ($src == null) {
       $src = $this->data;
     }
-    $parser = new Mustache\Parser();
+    $parser = new Parser();
     return $parser->compile($src);
   }
 };
