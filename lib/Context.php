@@ -73,23 +73,31 @@ class Context implements \ArrayAccess {
     return $m->render($string, $this);
   }
 
-  public function fetch($name, $default = '__raise') {
+  public function fetch($name, $evalDirectly = false, $default = '__raise') {
     foreach ($this->stack as $a) {
       /* avoid recursion */
       if (($a == $this->mustache) || ($a == $this)) {
         continue;
       }
+      $res = null;
 
       if (($a instanceof \ArrayAccess) || (is_array($a))) {
         if (isset($a[$name])) {
-          return $a[$name];
+          $res = $a[$name];
         } else if (isset($a[(string)$name])) {
-          return $a[(string)$name];
+          $res = $a[(string)$name];
         }
       } elseif (method_exists($a, $name)) {
-        return function ($text = "") use ($a, $name) {
+        $res = function ($text = "") use ($a, $name) {
           return $a->$name($text);
         };
+      }
+      if ($res !== null) {
+        if (is_callable($res) && $evalDirectly) {
+          return $this->render($res());
+        } else {
+          return $res;
+        }
       }
     }
     
@@ -117,7 +125,7 @@ class Context implements \ArrayAccess {
   }
 
   function offsetGet ( $offset ) {
-    return $this->fetch($offset, null);
+    return $this->fetch($offset, false, null);
   }
 
   /** Add a value to the context. **/
