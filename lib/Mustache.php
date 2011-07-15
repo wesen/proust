@@ -121,11 +121,14 @@ class Mustache implements \ArrayAccess {
    ***************************************************************************/
 
   public function render($data = null, $context = null) {
-    if ($data == null) {
+    if ($data === null) {
       $data = $this->getTemplate();
     } else {
       if (is_string($data)) {
         $data = new Mustache\Template($data);
+      } else {
+        // when not a string, return directly, don't try to parse
+        return $data;
       }
     }
 
