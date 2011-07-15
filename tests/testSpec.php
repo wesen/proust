@@ -78,11 +78,13 @@ class TestSpec extends UnitTestCase {
       $m->partials = $test["partials"];
     }
     $res = $m->render($test["template"], $test["data"]);
-    $this->assertEqual($res, $test["expected"],
-                       "Specification error: ".$test["desc"]."\n".
-                       "Got :\n------\n*".print_r($res, true)."*\n------\n".
-                       "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
-                       "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n");
+    $msg = "Specification error: ".$test["desc"]."\n".
+      "Got :\n------\n*".print_r($res, true)."*\n------\n".
+      "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
+      "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n";
+    $msg = str_replace('%', '%%', $msg);
+    
+    $this->assertEqual($res, $test["expected"], $msg);
     $this->tearDown();
   }
 
