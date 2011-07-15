@@ -92,7 +92,7 @@ if (\$v || (\$v === 0)) {
     }
   } else if (is_callable(\$v)) {
     ob_start(); \$f(); \$s = ob_get_clean();
-    echo \$v(\$s);
+    echo \$ctx->render(\$v(\$s));
   } else if (\$v) {
     \$f();
   }
