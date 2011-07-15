@@ -38,17 +38,27 @@ class TestSpec extends UnitTestCase {
     foreach (glob(SPEC_DIR."*.yml") as $file) {
       $name = str_replace(".yml", "", basename($file));
       $yaml = Spyc::YAMLLOAD($file);
+      array_walk_recursive($yaml, function (&$x) {
+          if (is_numeric($x)) {
+            /* XXX hack around spyc */
+            $x = (float)$x;
+          } else if (is_string($x)) {
+            $x = stripcslashes($x);
+          }
+        });
       $yaml["name"] = $name;
-      $this->specs[$name] = $yaml;
-      
       $i = 0;
       foreach ($yaml["tests"] as &$test) {
-        array_walk_recursive($test, function (&$x) {
-            $x = stripcslashes($x);
-          });
+        if (array_key_exists("lambda", $test["data"])) {
+          $code = "return function (\$text = \"\") { ".$test["data"]["lambda"]["php"]." };";
+          $test["data"]["lambda"] = eval($code);
+        }
+        $test["method_name"] = "$name"."_".$i;
         $this->tests[$name."_$i"] = $test;
         $i++;
       }
+      $this->specs[$name] = $yaml;
+      
     }
   }
 
