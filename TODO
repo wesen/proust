@@ -3,9 +3,10 @@ TODO for Mustache PHP Compiler
 
 X evaluate lambda result
 X fix recursive partials
+X lambda results should parse with the current delimiters (only when in section)
 
+- coalesce statics that follow each other
 - lambda should receive the raw string
-- lambda results should parse with the current delimiters
 
 - fix recognition of non empty lines
 - add partial indentation
