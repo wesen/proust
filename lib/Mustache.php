@@ -159,7 +159,11 @@ class Mustache implements \ArrayAccess {
    * {{mustaches}}.
    **/
   public static function __partial($name) {
-    return file_get_contents($name);
+    if (file_exists($name)) {
+      return file_get_contents($name);
+    } else {
+      return "";
+    }
   }
 
   /**
