@@ -101,6 +101,35 @@ class TestSpec extends UnitTestCase {
     $this->reporter->paintGroupEnd($spec["name"]);
   }
 
+  public function run($reporter) {
+    $context = SimpleTest::getContext();
+    $context->setTest($this);
+    $context->setReporter($reporter);
+    $this->reporter = $reporter;
+    $started = false;
+    foreach ($this->specs as $spec) {
+      foreach ($spec["tests"] as $test) {
+        $method = $test["method_name"];
+        if ($reporter->shouldInvoke($spec["name"], $method)) {
+          if (! $started) {
+            $reporter->paintCaseStart($this->getLabel());
+            $started = true;
+          }
+          $invoker = $this->reporter->createInvoker($this->createInvoker());
+          $invoker->before($method);
+          $invoker->invoke($method);
+          $invoker->after($method);
+        }
+      }
+    }
+    if ($started) {
+      $reporter->paintCaseEnd($this->getLabel());
+    }
+    unset($this->reporter);
+    $context->setTest(null);
+    return $reporter->getStatus();
+  }
+
   function fail($message = "Fail") {
     if (! isset($this->reporter)) {
       trigger_error('Can only make assertions within test methods');
@@ -113,7 +142,7 @@ class TestSpec extends UnitTestCase {
   }
 
   public function getTests() {
-    $res = array_merge(array_keys($this->specs), array_keys($this->tests));
+    $res = array_merge(array(), array_keys($this->tests));
     return $res;
   }
 };
