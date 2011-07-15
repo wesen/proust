@@ -6,10 +6,11 @@
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
-$DEBUG =
-       //       array('PARSER', 'NOTICE', 'COMPILER', 'EVALUATION')
-       array('PARSER')
-  ;
+$DEBUG = array();
+//array_push($DEBUG, 'PARSER');
+// array_push($DEBUG, 'NOTICE');
+// array_push($DEBUG, 'COMPILER');
+// array_push($DEBUG, 'EVALUATION');
   
 function get_class_name($object = null) {
   if (!is_object($object) && !is_string($object)) {
