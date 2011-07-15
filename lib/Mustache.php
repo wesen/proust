@@ -22,8 +22,10 @@ class Mustache implements \ArrayAccess {
 
   protected $context = null;
   protected $template = null;
-    
-  public function __construct() {
+
+  public $partials = array();
+
+  public function __construct($options = array()) {
     $this->templateName = null;
     $this->templatePath = ".";
     $this->templateExtension = "mustache";
@@ -32,6 +34,8 @@ class Mustache implements \ArrayAccess {
     $this->templateFile = null;
     $this->context = null;
     $this->template = null;
+
+    objectSetOptions($this, $options);
   }
 
   /***************************************************************************
@@ -89,7 +93,7 @@ class Mustache implements \ArrayAccess {
   /** template itself **/
   public function getTemplate() {
     if ($this->template == null) {
-      $this->template = new Mustache\Template(file_get_contents($this->templateFile));
+      $this->template = new Mustache\Template(file_get_contents($this->getTemplateFile()));
     }
     return $this->template;
   }
@@ -161,7 +165,11 @@ class Mustache implements \ArrayAccess {
    * context, so all you need to do is return a string.
    **/
   public function partial($name) {
-    return static::__partial($name);
+    if (array_key_exists($name, $this->partials)) {
+      return $this->partials[$name];
+    } else {
+      return static::__partial($this->getTemplatePath()."/".$name.".".$this->getTemplateExtension());
+    }
   }
 
   /** Memoization array for camelcasing. **/

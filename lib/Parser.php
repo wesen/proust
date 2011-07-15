@@ -41,6 +41,9 @@ class Parser {
   /** after these tags, all whitespace will be skipped. **/
   static $SKIP_WHITESPACE = array('#', '^', '/');
 
+  /** lines where only these tags are present should be removed. **/
+  static $STANDALONE_LINES = array('=', '!');
+
   /** allowed content in a tag name. **/
   static $ALLOWED_CONTENT = '(\w|[\?\!\/\_\-])*';
 
@@ -59,6 +62,7 @@ class Parser {
   }
 
   public function compile($src) {
+    debug_log("Starting compilation", 'PARSER');
     $this->sections = array();
     $this->result = array(":multi");
     $this->scanner = new \StringScanner($src);
@@ -81,6 +85,8 @@ class Parser {
 
   /** Find {{mustaches}} and add them to the result array. **/
   public function scanTags() {
+    debug_log("scan current ".$this->getPosition().": line: '".$this->scanner->checkUntil('[^\v]+')."'", 'PARSER');
+    
     if (!$this->scanner->scan(\StringScanner::escape($this->otag))) {
       return;
     }
