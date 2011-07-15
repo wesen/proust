@@ -20,14 +20,18 @@ class Template {
   }
 
   public function render($context) {
+    debug_log("current context ".print_r($context, true), 'COMPILER');
+    debug_log("render template ".print_r($this->data, true).", compiled: ".print_r($this->compiled, true), 'COMPILER');
     if ($this->compiled == null) {
-      $code = $this->compile($this->data);
-      //      echo "code: ".print_r($code, true)."\n";
-      $this->compiled = eval("return function (\$ctx) { $code };");
+      $this->code = $this->compile($this->data);
+      debug_log("template code ".print_r($this->code, true), 'COMPILER');
+      $this->compiled = eval("return function (\$ctx) { ".$this->code." };");
     }
 
     $f = $this->compiled;
-    return $f($context);
+    $res = $f($context);
+    debug_log("template evaluation: ".print_r($res, true), 'COMPILER');
+    return $res;
   }
 
   public function compile($src = null) {
