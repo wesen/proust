@@ -69,7 +69,7 @@ class TestSpec extends UnitTestCase {
     }
     $res = $m->render($test["template"], $test["data"]);
     $this->assertEqual($res, $test["expected"],
-                       "Specification error: *".$test["name"]."*: ".$test["desc"]."\n".
+                       "Specification error: ".$test["desc"]."\n".
                        "Got :\n------\n*".print_r($res, true)."*\n------\n".
                        "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
                        "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n");
@@ -96,7 +96,6 @@ class TestSpec extends UnitTestCase {
     $tests = $this->reporter->getTestList();
     $name = end($tests);
     $test = $this->tests[$name];
-    print "$message in test '$name' (".$test["name"].")\n";
     parent::fail($message);
     return false;
   }
