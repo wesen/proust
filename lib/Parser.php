@@ -39,7 +39,7 @@ parent::__construct($foo, 0, NULL);
 
 class Parser {
   /** after these tags, all whitespace will be skipped. **/
-  static $SKIP_WHITESPACE = array('#', '^', '/');
+  static $SKIP_WHITESPACE = array('#', '^', '/', '!', '=');
 
   /** lines where only these tags are present should be removed. **/
   static $STANDALONE_LINES = array('=', '!');
@@ -54,6 +54,7 @@ class Parser {
   public $otag = "{{";
   public $ctag = "}}";
 
+  protected $linePos;
   protected $sections;
   protected $result;
   
@@ -62,9 +63,10 @@ class Parser {
   }
 
   public function compile($src) {
-    debug_log("Starting compilation", 'PARSER');
+    debug_log("Starting parsing", 'PARSER');
     $this->sections = array();
     $this->result = array(":multi");
+    $this->linePos = 0;
     $this->scanner = new \StringScanner($src);
 
     while (!$this->scanner->isEos()) {
@@ -79,6 +81,7 @@ class Parser {
       throw new SyntaxError("Unclosed section ".$section["section"], $section["position"]);
     }
 
+    debug_log("Parsing result: ".print_r($this->result, true), 'PARSER');
 
     return $this->result;
   }
@@ -180,20 +183,23 @@ class Parser {
     }
 
     if (in_array($type, self::$SKIP_WHITESPACE)) {
-      $this->scanner->skip("\s+");
+      debug_log("skipping whitespace at: '".$this->scanner->checkUntil('[^\v]+')."'", 'PARSER');
+      $res = $this->scanner->skip('\n*');
+      debug_log("skipped : " + $res, 'PARSER');
     }
   }
 
   /** Try to find static text. **/
   public function scanText() {
     $text = $this->scanner->scanUntilExclusive(\StringScanner::escape($this->otag));
-
     if ($text === null) {
       /* Couldn't find any otag, which means the rest is just static text. */
       $text = $this->scanner->rest();
       $this->scanner->clear();
     }
 
+    debug_log("add text '".print_r($text, true)."'", 'PARSER');
+    
     if (!empty($text)) {
       array_push($this->result, array(":static", $text));
     }
