@@ -54,10 +54,17 @@ class Context implements \ArrayAccess {
     return $this;
   }
 
+  public function partial($name) {
+    $m = $this->getMustacheInStack();
+    $partial = $m->partial($name);
+    debug_log("partial: ".print_r($partial, true), 'EVALUATION');
+    return $m->render($partial, $this);
+  }
+
   public function fetch($name, $default = '__raise') {
     foreach ($this->stack as $a) {
       /* avoid recursion */
-      if ($a == $this->mustache) {
+      if (($a == $this->mustache) || ($a == $this)) {
         continue;
       }
 
