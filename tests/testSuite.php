@@ -6,11 +6,13 @@ require_once(dirname(__FILE__).'/../Mustache.php');
 class MustacheTestSuite extends TestSuite {
   function MustacheTestSuite() {
     $this->TestSuite('All Mustache tests');
-    $this->addFile("tests/testStringScanner.php");
-    $this->addFile("tests/testMustache.php");
-    $this->addFile("tests/testContext.php");
-    $this->addFile("tests/testParser.php");
-    $this->addFile("tests/testGenerator.php");
+    $this->addFile(dirname(__FILE__)."/testStringScanner.php");
+    $this->addFile(dirname(__FILE__)."/testHelpers.php");
+    $this->addFile(dirname(__FILE__)."/testMustache.php");
+    $this->addFile(dirname(__FILE__)."/testContext.php");
+    $this->addFile(dirname(__FILE__)."/testParser.php");
+    $this->addFile(dirname(__FILE__)."/testGenerator.php");
+    $this->addFile(dirname(__FILE__)."/testSpec.php");
   }
 };
 
