@@ -18,6 +18,12 @@ require_once(dirname(__FILE__).'/classDefs.php');
 class FoobarBlorg extends Mustache {
 };
 
+function mustacheForFile($file) {
+  $m = new Mustache();
+  $m->setTemplateFile(dirname(__FILE__)."/files/$file");
+  return $m;
+}
+
 class TestMustache extends UnitTestCase {
 
   function testPartial() {
@@ -74,6 +80,56 @@ class TestMustache extends UnitTestCase {
     $this->assertEqual($res->getTemplateName(), "foobar_blorg");
     $this->assertEqual($res->getTemplateExtension(), "mustache");
     $this->assertEqual($res->getTemplateFile(), "./foobar_blorg.mustache");
+  }
+
+  function testTokens() {
+    $m = mustacheForFile("token1.mustache");
+    $tpl = $m->getTemplate();
+    $res = $tpl->getTokens();
+    $this->assertEqual($res, array(":multi", array(":static", "foo\n")));
+
+    $m = mustacheForFile("token2.mustache");
+    $tpl = $m->getTemplate();
+    $res = $tpl->getTokens();
+    $this->assertEqual($res, array(":multi", array(":mustache", ":etag", "foo"), array(":static", "\n")));
+  }
+
+  function testRender() {
+    $m = mustacheForFile("token1.mustache");
+    $res = $m->render();
+    $this->assertEqual($res, "foo\n");
+    /* try again for precompiled version. */
+    $res = $m->render();
+    $this->assertEqual($res, "foo\n");
+
+    $m = mustacheForFile("token2.mustache");
+    $res = $m->render();
+    $this->assertEqual($res, "\n");
+    /* try again for precompiled version. */
+    $res = $m->render();
+    $this->assertEqual($res, "\n");
+
+    $res = $m->render(null, array("foo" => "foo"));
+    $this->assertEqual($res, "foo\n");
+    $res = $m->render(null, array("foo" => "bla"));
+    $this->assertEqual($res, "bla\n");
+  }
+
+  function testRenderSection() {
+    $m = mustacheForFile("section1.mustache");
+    $res = $m->render();
+    $this->assertEqual($res, "");
+    $res = $m->render(null, array("foo" => array("bla" => "bla")));
+    $this->assertEqual($res, "bla");
+
+    $res = $m->render(null, array("foo" => array(array("bla" => "1 "),
+                                                 array("bla" => "2 "),
+                                                 array("bla" => "3 "),
+                                                 array("bla" => "4 "),
+                                                 array("bla" => "5 ")
+                                                 )));
+    $this->assertEqual($res, "1 2 3 4 5 ");
+    
   }
 };
 
