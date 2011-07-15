@@ -27,6 +27,7 @@ class SpecInvoker extends SimpleInvoker {
   }
 }
 
+
 class TestSpec extends UnitTestCase {
 
   public function __construct() {
@@ -37,10 +38,14 @@ class TestSpec extends UnitTestCase {
     foreach (glob(SPEC_DIR."*.yml") as $file) {
       $name = str_replace(".yml", "", basename($file));
       $yaml = Spyc::YAMLLOAD($file);
+      $yaml["name"] = $name;
       $this->specs[$name] = $yaml;
       
       $i = 0;
-      foreach ($yaml["tests"] as $test) {
+      foreach ($yaml["tests"] as &$test) {
+        array_walk_recursive($test, function (&$x) {
+            $x = stripcslashes($x);
+          });
         $this->tests[$name."_$i"] = $test;
         $i++;
       }
@@ -57,25 +62,31 @@ class TestSpec extends UnitTestCase {
   }
   
   public function runTest($test) {
-      $this->setUp();
-      $m = new Mustache();
-      if (array_key_exists("partials", $test)) {
-        $m->partials = $test["partials"];
-      }
-      $res = $m->render($test["template"], $test["data"]);
-      $this->assertEqual($res, $test["expected"],
-                         "Specification error: *".$test["name"]."*: ".$test["desc"]."\n".
-                         "Got :\n------\n".print_r($res, true)."\n------\n".
-                         "Expected :\n------\n".print_r($test["expected"], true)."\n------\n".
-                         "Template: \n------\n".print_r($test["template"], true)."\n-------\n");
-      $this->tearDown();
+    $this->setUp();
+    $m = new Mustache();
+    if (array_key_exists("partials", $test)) {
+      $m->partials = $test["partials"];
+    }
+    $res = $m->render($test["template"], $test["data"]);
+    $this->assertEqual($res, $test["expected"],
+                       "Specification error: *".$test["name"]."*: ".$test["desc"]."\n".
+                       "Got :\n------\n*".print_r($res, true)."*\n------\n".
+                       "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
+                       "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n");
+    $this->tearDown();
   }
 
   public function runSpec($spec) {
     $tests = $spec["tests"];
+    $this->reporter->paintGroupStart($spec["name"], count($tests));
+    $i = 0;
     foreach ($tests as $test) {
+      $this->reporter->paintMethodStart($spec["name"]."_$i");
       $this->runTest($test);
+      $this->reporter->paintMethodEnd($spec["name"]."_$i");
+      $i++;
     }
+    $this->reporter->paintGroupEnd($spec["name"]);
   }
 
   function fail($message = "Fail") {
@@ -86,12 +97,12 @@ class TestSpec extends UnitTestCase {
     $name = end($tests);
     $test = $this->tests[$name];
     print "$message in test '$name' (".$test["name"].")\n";
+    parent::fail($message);
     return false;
   }
 
   public function getTests() {
     $res = array_merge(array_keys($this->specs), array_keys($this->tests));
-    //    echo "tests: ".print_r($res, true)."\n";
     return $res;
   }
 };
