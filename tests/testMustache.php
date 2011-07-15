@@ -28,8 +28,11 @@ class TestMustache extends UnitTestCase {
 
   function testPartial() {
     $m = new Mustache();
-    $res = $m->partial(__filename("testPartial.mustache"));
+    $m->setTemplatePath(dirname(__FILE__)."/files/");
+    $res = $m->partial("testPartial");
     $this->assertEqual($res, "partial {{mustache}}\n");
+
+    /* XXX test partial evaluation */
   }
 
   function testClassify() {
@@ -132,9 +135,6 @@ class TestMustache extends UnitTestCase {
     
   }
 
-  function testPartial() {
-    /* XXX */
-  }
 };
 
 ?>
