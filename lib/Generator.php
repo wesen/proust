@@ -112,11 +112,11 @@ return $res;
   }
 
   public function on_utag($name) {
-    return "echo \$ctx['$name'];";
+    return "echo \$ctx->fetch('$name', true, null);";
   }
 
   public function on_etag($name) {
-    return "echo htmlspecialchars(\$ctx['$name']);";
+    return "echo htmlspecialchars(\$ctx->fetch('$name', true, null));";
   }
 }
 
