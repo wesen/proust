@@ -1,6 +1,15 @@
 TODO for Mustache PHP Compiler
 ------------------------------
 
+X evaluate lambda result
+X fix recursive partials
+
+- lambda should receive the raw string
+- lambda results should parse with the current delimiters
+
+- fix recognition of non empty lines
+- add partial indentation
+
 - cache compiled partials
 - implement view classes
 - implement specification testing
