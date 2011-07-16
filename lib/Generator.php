@@ -54,7 +54,7 @@ class Generator {
       break;
 
     case ":static":
-      return "echo '".self::escape($tokens[1])."';";
+      return "\$ctx->output('".self::escape($tokens[1])."');";
       break;
 
     case ":mustache":
@@ -92,7 +92,7 @@ if (\$v || (\$v === 0)) {
     }
   } else if (is_callable(\$v)) {
     ob_start(); \$f(); \$s = ob_get_clean();
-    echo \$ctx->render(\$v(\$s));
+    \$ctx->output(\$ctx->render(\$v(\$s)));
   } else if (\$v) {
     \$f();
   }
@@ -107,16 +107,16 @@ return $res;
     return "\$v = \$ctx['$name']; if (!\$v && (\$v !== 0)) { $code }";
   }
 
-  public function on_partial($name) {
-    return "echo \$ctx->partial('$name');";
+  public function on_partial($name, $indentation) {
+    return "\$ctx->output(\$ctx->partial('$name', '$indentation'));";
   }
 
   public function on_utag($name) {
-    return "echo \$ctx->fetch('$name', true, null);";
+    return "\$ctx->output(\$ctx->fetch('$name', true, null));";
   }
 
   public function on_etag($name) {
-    return "echo htmlspecialchars(\$ctx->fetch('$name', true, null));";
+    return "\$ctx->output(htmlspecialchars(\$ctx->fetch('$name', true, null)));";
   }
 
   public function on_tag_change($otag, $ctag) {
