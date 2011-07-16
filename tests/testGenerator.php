@@ -17,24 +17,26 @@ class TestGenerator extends UnitTestCase {
   }
   
   function testStringStatic() {
-    $res = $this->g->compile_sub(array(":static", "foo"));
-    $this->assertEqual($res, "echo 'foo';");
+    $ctx = $this->c;
+    $res = $this->g->compile(array(":static", "foo"));
+    $this->assertEqual(eval($res), "foo");
 
-    $res = $this->g->compile_sub(array(":static", "foo'bar'"));
-    $this->assertEqual($res, "echo 'foo\\'bar\\'';");
+    $res = $this->g->compile(array(":static", "foo'bar'"));
+    $this->assertEqual(eval($res), "foo'bar'");
 
-    $res = $this->g->compile_sub(array(":static", '$foo'));
-    $this->assertEqual($res, 'echo \'$foo\';');
+    $res = $this->g->compile(array(":static", '$foo'));
+    $this->assertEqual(eval($res), '$foo');
 
-    $res = $this->g->compile_sub(array(":multi",
+    $res = $this->g->compile(array(":multi",
                                    array(":multi",
                                          array(":static", "foo'bar'"),
                                          array(":static", "baz")),
                                    array(":static", "flog")));
-    $this->assertEqual($res, "echo 'foo\\'bar\\'';\necho 'baz';\necho 'flog';");
+    $this->assertEqual(eval($res), "foo'bar'bazflog");
   }
 
   function testStatic() {
+    $ctx = $this->c;
     $res = $this->g->compile(array(":static", "foo"));
     $this->assertEqual(eval($res), "foo");
 
@@ -51,6 +53,7 @@ class TestGenerator extends UnitTestCase {
   }
 
   function testSection() {
+    $ctx = $this->c;
     $res = $this->g->compile(array(":mustache", ":section", "foo", array(":static", "bla")));
     $ctx = $this->c;
     $this->assertEqual(eval($res), "");
@@ -69,6 +72,7 @@ class TestGenerator extends UnitTestCase {
   }
 
   function testInvertedSection() {
+    $ctx = $this->c;
     $res = $this->g->compile(array(":mustache", ":inverted_section", "foo", array(":static", "bla")));
     $ctx = $this->c;
     $this->assertEqual(eval($res), "bla");
