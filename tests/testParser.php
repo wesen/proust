@@ -254,13 +254,32 @@ class TestParser extends UnitTestCase {
   public function testPartial() {
     $res = $this->p->compile("{{>partial}}");
     $this->assertEqual($res, array(":multi",
-                                   array(":mustache", ":partial", "partial")));
+                                   array(":mustache", ":partial", "partial", "")));
     $res = $this->p->compile("{{<partial}}");
     $this->assertEqual($res, array(":multi",
-                                   array(":mustache", ":partial", "partial")));
+                                   array(":mustache", ":partial", "partial", "")));
     $res = $this->p->compile("{{<partial/test}}");
     $this->assertEqual($res, array(":multi",
-                                   array(":mustache", ":partial", "partial/test")));
+                                   array(":mustache", ":partial", "partial/test", "")));
+
+    $res = $this->p->compile("  {{>partial}}");
+    $this->assertEqual($res, array(":multi",
+                                   array(":mustache", ":partial", "partial", "  ")));
+
+    $res = $this->p->compile("foo  {{>partial}}");
+    $this->assertEqual($res, array(":multi",
+                                   array(":static", "foo  "),
+                                   array(":mustache", ":partial", "partial", "")));
+
+    $res = $this->p->compile("foo  \n  {{>partial}}");
+    $this->assertEqual($res, array(":multi",
+                                   array(":static", "foo  \n"),
+                                   array(":mustache", ":partial", "partial", "  ")));
+
+    $res = $this->p->compile("foo  \n\t\t  {{>partial}}");
+    $this->assertEqual($res, array(":multi",
+                                   array(":static", "foo  \n"),
+                                   array(":mustache", ":partial", "partial", "\t\t  ")));
   }
 
   public function testUtag() {
@@ -278,7 +297,6 @@ You have just won ${{value}}!
 {{#in_ca}}
 Well, ${{taxed_value}}, after taxes.
 {{/in_ca}}');
-    var_dump($res);
     $this->assertEqual($res,
                        array(":multi",
                              array(":static", "Hello "),
@@ -323,9 +341,12 @@ Well, ${{taxed_value}}, after taxes.
 
     $res = $this->p->compile("   {{! comment }}   ");
     $this->assertEqual($res, array(":multi"));
-
     $res = $this->p->compile("   {{! comment }}   \n");
     $this->assertEqual($res, array(":multi"));
+
+    $res = $this->p->compile("   {{! comment }}   \n  ");
+    $this->assertEqual($res, array(":multi",
+                                   array(":static", "  ")));
 
     $res = $this->p->compile("\r\n   {{! comment }}   \n");
     $this->assertEqual($res, array(":multi",
