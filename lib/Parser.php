@@ -69,7 +69,7 @@ class Parser {
     while (!$this->scanner->isEos()) {
       debug_log("scanTags (bol? ".$this->startOfLine.") rest '".$this->scanner->peek(10)."' otag: ".$this->otag, 'PARSER');
       $this->scanTags();
-      debug_log("scanText", 'PARSER');
+      debug_log("scanText (bol? ".$this->startOfLine.") rest '".$this->scanner->peek(10)."'", 'PARSER');
       $this->scanText();
     }
 
@@ -137,6 +137,7 @@ class Parser {
 
     $this->startOfLine = false;
     $indentation = null;
+    
     if (in_array($type, self::$STANDALONE_LINES)) {
       if ($bol) {
         $prev = $this->lastStatic();
@@ -215,7 +216,7 @@ class Parser {
 
     case '<':
     case '>':
-      array_push($this->result, array(":mustache", ":partial", $content));
+      array_push($this->result, array(":mustache", ":partial", $content, $indentation));
       break;
 
     case '{':
