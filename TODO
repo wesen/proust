@@ -9,7 +9,8 @@ X fix recognition of non empty lines
 X implement specification testing
 
 - fix partial recursion context stack
-- lambda should receive the raw string
+- lambda should receive the raw string -> store pos in source, add source at beginning of compile
+- store current context in context stack for lambdas
 
 - add partial indentation
 
