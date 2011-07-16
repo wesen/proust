@@ -74,10 +74,11 @@ class Context implements \ArrayAccess {
   }
 
   public function partial($name, $indentation) {
-    if (in_array($name, $this->partialStack)) {
-      return "";
+    if (count($this->partialStack) > 30) {
+      /* max recursion reached, returning warning string. */
+      return "Mustache: max recursion level reached\n";
     }
-
+    
     array_push($this->partialStack, $name);
     $prevIndentation = $this->indentation;
     $this->indentation .= $indentation;
