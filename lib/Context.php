@@ -59,6 +59,7 @@ class Context implements \ArrayAccess {
   }
 
   public function partial($name) {
+    
     if (in_array($name, $this->partialStack)) {
       return "";
     }

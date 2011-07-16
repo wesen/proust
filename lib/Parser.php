@@ -39,7 +39,7 @@ parent::__construct($foo, 0, NULL);
 
 class Parser {
   /** lines where only these tags are present should be removed. **/
-  static $STANDALONE_LINES = array('=', '!', '#', '^', '/');
+  static $STANDALONE_LINES = array('=', '!', '#', '^', '/', '>');
 
   /** allowed content in a tag name. **/
   static $ALLOWED_CONTENT = '(\w|[\?\!\/\_\-])*';
