@@ -133,29 +133,36 @@ class Parser {
     }
 
     /* Whitespace handling */
+    $bol = $this->startOfLine;
+
+    $this->startOfLine = false;
+    $indentation = null;
     if (in_array($type, self::$STANDALONE_LINES)) {
-      if ($this->startOfLine) {
-        $this->startOfLine = false;
-        
+      if ($bol) {
         $prev = $this->lastStatic();
-        debug_log("testing for standalone line, prev: '".$prev[1]."', rest: '".$this->scanner->peek(10)."'", 'PARSER');
-        if (($prev === null) || (preg_match('/^\h*$/m', $prev[1])) || (preg_match('/\n$/', $prev[1]))) {
-          debug_log("prev is whitespace", 'PARSER');
-          if (preg_match('/^\h*\r?$/m', $this->scanner->rest())) {
-            $this->scanner->skip('\h*');
-            if ($this->scanner->isEos()) {
-              debug_log("skip previous newline", 'PARSER');
-              $this->stripWhitespace(true);
-            } else {
-              $this->stripWhitespace();
-              $this->scanner->skip('\r?\n?');
-            }
-            debug_log("after skip '".$this->scanner->peek(10)."'", 'PARSER');
-            $this->startOfLine = true;
-          }
+        if ($prev === null) {
+          /* beginning of file */
+          $prev = array(":static", "");
         }
-      } else {
-        $this->startOfLine = false;
+        debug_log("scanning prev '".$prev[1]."'", 'PARSER');
+        $st = new \StringScanner($prev[1]);
+        if ($st->doesExist('\r?\n?(\h*)$') !== null) {
+          $indentation = $st[1]; // store indentation for partials
+          debug_log("prev is whitespace, rest: '".$this->scanner->peek(10)."'", 'PARSER');
+          if ($this->scanner->scan('[\h\r]*') !== null) {
+            debug_log("after scan '".$this->scanner->peek(10)."'", 'PARSER');
+            if ($this->scanner->isEos()) {
+              $this->stripWhitespace(true);
+            } else if ($this->scanner->peek(1) == "\n") {
+              $this->stripWhitespace();
+              $this->scanner->skip('\n?');
+              $this->startOfLine = true;
+            } else {
+              $this->scanner->unScan();
+            }
+          }
+          debug_log("after skip '".$this->scanner->peek(10)."'", 'PARSER');
+        }
       }
     }
 
@@ -282,9 +289,12 @@ class Parser {
 
     if (!empty($text)) {
       debug_log("look for eol in '$text': ".strrpos($text, "\n"), 'PARSER');
-      if (strrpos($text, "\n") !== false) {
+      if (preg_match('/\n\h*$/', $text)) {
         $this->startOfLine = true;
+      } else if (!preg_match('/^\s*$/', $text)) {
+        $this->startOfLine = false;
       }
+          
       $this->addStatic($text);
     }
   }
