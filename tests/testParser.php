@@ -273,12 +273,14 @@ class TestParser extends UnitTestCase {
 
     $res = $this->p->compile("foo  \n  {{>partial}}");
     $this->assertEqual($res, array(":multi",
-                                   array(":static", "foo  \n"),
+                                   array(":static", "foo  "),
+                                   array(":newline"),
                                    array(":mustache", ":partial", "partial", "  ")));
 
     $res = $this->p->compile("foo  \n\t\t  {{>partial}}");
     $this->assertEqual($res, array(":multi",
-                                   array(":static", "foo  \n"),
+                                   array(":static", "foo  "),
+                                   array(":newline"),
                                    array(":mustache", ":partial", "partial", "\t\t  ")));
   }
 
@@ -301,9 +303,11 @@ Well, ${{taxed_value}}, after taxes.
                        array(":multi",
                              array(":static", "Hello "),
                              array(":mustache", ":etag", "name"),
-                             array(":static", "\nYou have just won $"),
+                             array(":newline"),
+                             array(":static", "You have just won $"),
                              array(":mustache", ":etag", "value"),
-                             array(":static", "!\n"),
+                             array(":static", "!"),
+                             array(":newline"),
                              array(":mustache", ":section", "in_ca",
                                    array(":multi",
                                          array(":static", "Well, $"),
@@ -316,23 +320,34 @@ Well, ${{taxed_value}}, after taxes.
     $this->assertEqual($res, array(":multi", array(":static", " ")));
 
     $res = $this->p->compile("\r\n");
-    $this->assertEqual($res, array(":multi", array(":static", "\r\n")));
+    $this->assertEqual($res, array(":multi",
+                                   array(":static", "\r"),
+                                   array(":newline")));
 
     $res = $this->p->compile("\r\n\r\n");
-    $this->assertEqual($res, array(":multi", array(":static", "\r\n\r\n")));
+    $this->assertEqual($res, array(":multi",
+                                   array(":static", "\r"),
+                                   array(":newline"),
+                                   array(":static", "\r"),
+                                   array(":newline")));
   }
 
   public function testWhitespaceTag() {
     $res = $this->p->compile("\r\n{{tag}}\r\n"); 
     $this->assertEqual($res, array(":multi",
-                                   array(":static", "\r\n"),
+                                   array(":static", "\r"),
+                                   array(":newline"),
                                    array(":mustache", ":etag", "tag"),
-                                   array(":static", "\r\n")));
+                                   array(":static", "\r"),
+                                   array(":newline")));
     $res = $this->p->compile("\r\n  {{tag}}\r\n"); 
     $this->assertEqual($res, array(":multi",
-                                   array(":static", "\r\n  "),
+                                   array(":static", "\r"),
+                                   array(":newline"),
+                                   array(":static", "  "),
                                    array(":mustache", ":etag", "tag"),
-                                   array(":static", "\r\n")));
+                                   array(":static", "\r"),
+                                   array(":newline")));
   }
 
   public function testWhitespaceComment() {
@@ -350,11 +365,17 @@ Well, ${{taxed_value}}, after taxes.
 
     $res = $this->p->compile("\r\n   {{! comment }}   \n");
     $this->assertEqual($res, array(":multi",
-                                   array(":static", "\r\n")));
+                                   array(":static", "\r"),
+                                   array(":newline")));
 
     $res = $this->p->compile("\r\nfoo {{! comment}} bla\r\n blorg\r\n");
     $this->assertEqual($res, array(":multi",
-                                   array(":static", "\r\nfoo  bla\r\n blorg\r\n")));
+                                   array(":static", "\r"),
+                                   array(":newline"),
+                                   array(":static", "foo  bla\r"),
+                                   array(":newline"),
+                                   array(":static", " blorg\r"),
+                                   array(":newline")));
  }
 
   public function testWhitespaceSection() {

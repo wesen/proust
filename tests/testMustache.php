@@ -89,12 +89,16 @@ class TestMustache extends UnitTestCase {
     $m = mustacheForFile("token1.mustache");
     $tpl = $m->getTemplate();
     $res = $tpl->getTokens();
-    $this->assertEqual($res, array(":multi", array(":static", "foo\n")));
+    $this->assertEqual($res, array(":multi",
+                                   array(":static", "foo"),
+                                   array(":newline")));
 
     $m = mustacheForFile("token2.mustache");
     $tpl = $m->getTemplate();
     $res = $tpl->getTokens();
-    $this->assertEqual($res, array(":multi", array(":mustache", ":etag", "foo"), array(":static", "\n")));
+    $this->assertEqual($res, array(":multi",
+                                   array(":mustache", ":etag", "foo"),
+                                   array(":newline")));
   }
 
   function testRender() {
