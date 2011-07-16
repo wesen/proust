@@ -7,12 +7,11 @@ X lambda results should parse with the current delimiters (only when in section)
 X coalesce statics that follow each other
 X fix recognition of non empty lines
 X implement specification testing
+X add partial indentation
 
 - fix partial recursion context stack
 - lambda should receive the raw string -> store pos in source, add source at beginning of compile
 - store current context in context stack for lambdas
-
-- add partial indentation
 
 - cache compiled partials
 - implement view classes

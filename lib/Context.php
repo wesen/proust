@@ -37,6 +37,8 @@ class Context implements \ArrayAccess {
     $this->partialStack = array();
     $this->otag = null;
     $this->ctag = null;
+    $this->indentation = "";
+    $this->isNewline = true;
   }
 
   public function getMustacheInStack() {
@@ -59,15 +61,26 @@ class Context implements \ArrayAccess {
   }
 
   public function output($str) {
+    if ($this->isNewline) {
+      echo $this->indentation;
+      $this->isNewline = false;
+    }
     echo $str;
   }
 
-  public function partial($name) {
+  public function newline() {
+    $this->isNewline = true;
+    echo "\n";
+  }
+
+  public function partial($name, $indentation) {
     if (in_array($name, $this->partialStack)) {
       return "";
     }
 
     array_push($this->partialStack, $name);
+    $prevIndentation = $this->indentation;
+    $this->indentation .= $indentation;
 
     /* TODO check for already compiled partial with current ctag / otag */
     
@@ -81,8 +94,9 @@ class Context implements \ArrayAccess {
     $res = $this->render($partial);
     $this->ctag = $ctag;
     $this->otag = $otag;
-    
+
     array_pop($this->partialStack);
+    $this->indentation = $prevIndentation;
     
     return $res;
   }

@@ -69,7 +69,7 @@ class Generator {
       break;
 
     case ":newline":
-      return "\$ctx->output(\"\\n\");";
+      return "\$ctx->newline();";
       break;
 
     default:

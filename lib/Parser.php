@@ -193,11 +193,8 @@ class Parser {
               array_pop($this->result);
             }
             
-            //            if ($type != '>') {
-            //              $this->scanner->skip('\n?');
-            //            }
-              $this->scanner->skip('\n?');
-
+            $this->scanner->skip('\n?');
+ 
             debug_log("standalone tag found, rest '".$this->scanner->peek(10)."'", 'PARSER');
           }
         }
