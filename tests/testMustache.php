@@ -121,9 +121,9 @@ class TestMustache extends UnitTestCase {
   function testRenderSection() {
     $m = mustacheForFile("section1.mustache");
     $res = $m->render();
-    $this->assertEqual($res, "");
+    $this->assertEqual($res, "\n");
     $res = $m->render(null, array("foo" => array("bla" => "bla")));
-    $this->assertEqual($res, "bla");
+    $this->assertEqual($res, "bla\n");
 
     $res = $m->render(null, array("foo" => array(array("bla" => "1 "),
                                                  array("bla" => "2 "),
@@ -131,7 +131,7 @@ class TestMustache extends UnitTestCase {
                                                  array("bla" => "4 "),
                                                  array("bla" => "5 ")
                                                  )));
-    $this->assertEqual($res, "1 2 3 4 5 ");
+    $this->assertEqual($res, "1 2 3 4 5 \n");
     
   }
 
