@@ -79,13 +79,13 @@ class Generator {
     return "";
   }
 
-  public function on_section($name, $content) {
+  public function on_section($name, $content, $start, $end) {
     $code = $this->compile_sub($content);
     $name = self::escape($name);
+    $len = $end - $start;
     $res = <<<EOD
 \$f = function () use (\$ctx) { $code };
 \$v = \$ctx['$name'];
-// echo "v: ".print_r(\$v, true)."\\n";
 if (\$v || (\$v === 0)) {
   if (is_array(\$v) || \$v instanceof \\Traversable) {
     if (Mustache\Generator::isAssoc(\$v)) {
@@ -97,8 +97,7 @@ if (\$v || (\$v === 0)) {
       \$ctx->pop();
     }
   } else if (is_callable(\$v)) {
-    ob_start(); \$f(); \$s = ob_get_clean();
-    \$ctx->output(\$ctx->render(\$v(\$s)));
+    \$ctx->output(\$ctx->render(\$v(substr(\$src, $start, $len))));
   } else if (\$v) {
     \$f();
   }
