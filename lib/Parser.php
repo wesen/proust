@@ -38,12 +38,8 @@ parent::__construct($foo, 0, NULL);
 };
 
 class Parser {
-  /** after these tags, all whitespace will be skipped. **/
-  static $SKIP_WHITESPACE_BEFORE = array('/', '!', '=');
-  static $SKIP_WHITESPACE = array('#', '^', '/', '!', '=', '>');
-
   /** lines where only these tags are present should be removed. **/
-  static $STANDALONE_LINES = array('=', '!');
+  static $STANDALONE_LINES = array('=', '!', '#', '^', '/');
 
   /** allowed content in a tag name. **/
   static $ALLOWED_CONTENT = '(\w|[\?\!\/\_\-])*';
@@ -71,9 +67,10 @@ class Parser {
     $this->scanner = new \StringScanner($src);
 
     while (!$this->scanner->isEos()) {
-      if (!$this->scanTags()) {
-        $this->scanText();
-      }
+      debug_log("scanTags (bol? ".$this->startOfLine.") rest '".$this->scanner->peek(10)."' otag: ".$this->otag, 'PARSER');
+      $this->scanTags();
+      debug_log("scanText", 'PARSER');
+      $this->scanText();
     }
 
     /* there still are opened sections */
@@ -89,20 +86,19 @@ class Parser {
 
   /** Find {{mustaches}} and add them to the result array. **/
   public function scanTags() {
-    debug_log("scanning '".$this->scanner->rest()."'", 'PARSER');
-    if (!$this->scanner->scan("(\s*)".\StringScanner::escape($this->otag))) {
+    /* Read in the next tag. */
+    if (!$this->scanner->scan(\StringScanner::escape($this->otag))) {
       return;
     }
 
-    $whitespace = $this->scanner[1];
-    
-    /* always have this start on a fresh line. */
     /* Since {{= rewrite ctag, we store the ctag which should be used when parsing this specific tag. **/
     $currentCtag = $this->ctag;
+    $this->scanner->skip("\s*");
+
     $type = $this->scanner->scan("[#^\/=!<>^{&]");
 
     $this->scanner->skip("\s*");
-
+    
     if (in_array($type, self::$ANY_CONTENT)) {
       $r = "\s*".(\StringScanner::escape($type))."?".(\StringScanner::escape($currentCtag));
       $content = $this->scanner->scanUntilExclusive($r);
@@ -110,18 +106,60 @@ class Parser {
       $content = $this->scanner->scan(self::$ALLOWED_CONTENT);
     }
 
+    /* read until end of tag. */
+    $this->scanner->skip("\s+");
+    if ($type) {
+      $skipType = $type;
+      if ($type == '{') {
+        $skipType = '}';
+      }
+      debug_log("Skipping $skipType", 'PARSER');
+      $this->scanner->skip(\StringScanner::escape($skipType));
+    }
+
+    $close = $this->scanner->scan(\StringScanner::escape($currentCtag));
+    if (!$close) {
+      if ($this->scanner->check(self::$ALLOWED_CONTENT.\StringScanner::escape($currentCtag))) {
+        throw new SyntaxError("Illegal content in tag", $this->getPosition());
+      } else {
+        throw new SyntaxError("Unclosed tag with '".$this->scanner->peek(10)."'", $this->getPosition());
+      }
+    }
+    
     debug_log("scanned tag $type$content", 'PARSER');
 
     if (empty($content)) {
       throw new SyntaxError("Illegal content in tag", $this->getPosition());
     }
 
-    if (!in_array($type, self::$SKIP_WHITESPACE_BEFORE)) {
-      if (!empty($whitespace)) {
-        debug_log("adding beginning of line whitespace: '$whitespace'", 'PARSER');
-        array_push($this->result, array(":static", $whitespace));
+    /* Whitespace handling */
+    if (in_array($type, self::$STANDALONE_LINES)) {
+      if ($this->startOfLine) {
+        $this->startOfLine = false;
+        
+        $prev = $this->lastStatic();
+        debug_log("testing for standalone line, prev: '".$prev[1]."', rest: '".$this->scanner->peek(10)."'", 'PARSER');
+        if (($prev === null) || (preg_match('/^\h*$/m', $prev[1])) || (preg_match('/\n$/', $prev[1]))) {
+          debug_log("prev is whitespace", 'PARSER');
+          if (preg_match('/^\h*\r?$/m', $this->scanner->rest())) {
+            $this->scanner->skip('\h*');
+            if ($this->scanner->isEos()) {
+              debug_log("skip previous newline", 'PARSER');
+              $this->stripWhitespace(true);
+            } else {
+              $this->stripWhitespace();
+              $this->scanner->skip('\r?\n?');
+            }
+            debug_log("after skip '".$this->scanner->peek(10)."'", 'PARSER');
+            $this->startOfLine = true;
+          }
+        }
+      } else {
+        $this->startOfLine = false;
       }
     }
+
+    /* parse tag type */
 
     switch ($type) {
     case '#':
@@ -162,6 +200,7 @@ class Parser {
 
     case '=':
       $separators = explode(' ', $content);
+      debug_log("set separators: ".print_r($separators, true), 'PARSER');
       $this->otag = $separators[0];
       $this->ctag = $separators[1];
       array_push($this->result, array(":mustache", ":tag_change", $this->otag, $this->ctag));
@@ -174,9 +213,6 @@ class Parser {
 
     case '{':
     case '&':
-      if ($type == "{") {
-        $type = "}"; // for balancing purposes
-      }
       array_push($this->result, array(":mustache", ":utag", $content));
       break;
 
@@ -185,23 +221,51 @@ class Parser {
       break;
     }
 
-    $this->scanner->skip("\s+");
-    if ($type) {
-      $this->scanner->skip(\StringScanner::escape($type));
-    }
+    debug_log("finish tag parsing $type$content", 'PARSER');
 
-    $close = $this->scanner->scan(\StringScanner::escape($currentCtag));
-    if (!$close) {
-      throw new SyntaxError("Unclosed tag", $this->getPosition());
-    }
+  }
 
-    if (in_array($type, self::$SKIP_WHITESPACE)) {
-      if ($this->startOfLine) {
-        debug_log("skipping whitespace at: '".$this->scanner->checkUntil('[^\v]+')."'", 'PARSER');
-        $res = $this->scanner->skip('\h*\r?\n?');
-        debug_log("skipped : $res, rest: '".$this->scanner->rest()."'", 'PARSER');
+  public function lastStatic() {
+    $count = count($this->result);
+    if ($count > 0) {
+      $elt = &$this->result[$count-1];
+      if ($elt[0] === ":static") {
+        return $elt;
       }
-    } else {
+    }
+
+    return null;
+  }
+  
+  public function addStatic($text) {
+    debug_log("add static '$text'", 'PARSER');
+    $count = count($this->result);
+    if ($count > 0) {
+      $elt = &$this->result[$count-1];
+      if ($elt[0] === ":static") {
+        $elt[1] = $elt[1].$text;
+        return;
+      }
+    }
+
+    array_push($this->result, array(":static", $text));
+  }
+
+  public function stripWhitespace($stripNewline = false) {
+    $count = count($this->result);
+    if ($count > 0) {
+      $elt = &$this->result[$count-1];
+      if ($elt[0] === ":static") {
+        debug_log("strip_whitespace on '".$elt[1]."'", 'PARSER');
+        if ($stripNewline && preg_match('/\n$/', $elt[1])) {
+          $elt[1] = preg_replace('/\r?\n/', '', $elt[1]);
+        } else {
+          $elt[1] = preg_replace('/\h*$/', '', $elt[1]);
+        }
+        if ($elt[1] == '') {
+          array_pop($this->result);
+        }
+      }
     }
   }
 
@@ -209,32 +273,19 @@ class Parser {
   public function scanText() {
     /* XXX split here */
     $text = $this->scanner->scanUntilExclusive(\StringScanner::escape($this->otag));
-    
+
     if ($text === null) {
       /* Couldn't find any otag, which means the rest is just static text. */
       $text = $this->scanner->rest();
       $this->scanner->clear();
-    } else {
-      if (!empty($text)) {
-        $pos = strrpos($text, "\n");
-        if ($pos !== false) {
-          /* backtrack to position of last newline */
-          $backtrack = strlen($text) - $pos - 1;
-          $text = substr($text, 0, $pos + 1);
-          $this->scanner->pos -= $backtrack;
-          debug_log("start of line", 'PARSER');
-          $this->startOfLine = true;
-        } else {
-          $this->startOfLine = false;
-        }
-      } else {
+    }
+
+    if (!empty($text)) {
+      debug_log("look for eol in '$text': ".strrpos($text, "\n"), 'PARSER');
+      if (strrpos($text, "\n") !== false) {
         $this->startOfLine = true;
       }
-    }
-    
-    if (!empty($text)) {
-      debug_log("add text '".print_r($text, true)."'", 'PARSER');
-      array_push($this->result, array(":static", $text));
+      $this->addStatic($text);
     }
   }
 
