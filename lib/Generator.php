@@ -68,6 +68,10 @@ class Generator {
       }
       break;
 
+    case ":newline":
+      return "\$ctx->output(\"\\n\");";
+      break;
+
     default:
       throw new \Exception("Unhandled expression ".$tokens[0]);
       break;
