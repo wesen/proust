@@ -172,7 +172,7 @@ class StringScanner implements \ArrayAccess {
     $this->pushState();
     
     $res = $this->isMatch($re);
-    if ($res) {
+    if ($res !== null) {
       if ($advanceScanPointerP) {
         $this->pos += $this->match_length;
       }
