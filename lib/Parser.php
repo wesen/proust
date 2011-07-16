@@ -40,6 +40,7 @@ parent::__construct($foo, 0, NULL);
 class Parser {
   /** lines where only these tags are present should be removed. **/
   static $STANDALONE_LINES = array('=', '!', '#', '^', '/', '>');
+  static $SECTION_TYPES = array('#', '^', '/');
 
   /** allowed content in a tag name. **/
   static $ALLOWED_CONTENT = '(\w|[\?\!\/\_\-])*';
@@ -62,7 +63,7 @@ class Parser {
   public function compile($src) {
     debug_log("Starting parsing", 'PARSER');
     $this->sections = array();
-    $this->result = array(":multi");
+    $this->result = array(":start");
     $this->startOfLine = true;
     $this->scanner = new \StringScanner($src);
 
@@ -73,14 +74,23 @@ class Parser {
       $this->scanText();
     }
 
+    /* check if there is an empty placeholder tag present */
+    $prev = end($this->result);
+    if (is_array($prev) && 
+        ($prev[0] === ":standalone")) {
+      array_pop($this->result);
+    }
+    
     /* there still are opened sections */
     if (count($this->sections) > 0) {
       $section = array_pop($this->sections);
       throw new SyntaxError("Unclosed section ".$section["section"], $section["position"]);
     }
 
-    debug_log("Parsing result: ".print_r($this->result, true), 'PARSER');
+    /* replace start token with multi now that we are done. */
+    $this->result[0] = ":multi";
 
+    debug_log("Parsing result: ".print_r($this->result, true), 'PARSER');
     return $this->result;
   }
 
@@ -133,38 +143,76 @@ class Parser {
     }
 
     /* Whitespace handling */
-    $bol = $this->startOfLine;
-
-    $this->startOfLine = false;
-    $indentation = null;
+    $indentation = "";
     
+    $isStandalone = false;
     if (in_array($type, self::$STANDALONE_LINES)) {
-      if ($bol) {
-        $prev = $this->lastStatic();
-        if ($prev === null) {
-          /* beginning of file */
-          $prev = array(":static", "");
-        }
-        debug_log("scanning prev '".$prev[1]."'", 'PARSER');
-        $st = new \StringScanner($prev[1]);
-        if ($st->doesExist('\r?\n?(\h*)$') !== null) {
-          $indentation = $st[1]; // store indentation for partials
-          debug_log("prev is whitespace, rest: '".$this->scanner->peek(10)."'", 'PARSER');
-          if ($this->scanner->scan('[\h\r]*') !== null) {
-            debug_log("after scan '".$this->scanner->peek(10)."'", 'PARSER');
-            if ($this->scanner->isEos()) {
-              $this->stripWhitespace(true);
-            } else if ($this->scanner->peek(1) == "\n") {
-              $this->stripWhitespace();
-              $this->scanner->skip('\n?');
-              $this->startOfLine = true;
-            } else {
-              $this->scanner->unScan();
-            }
+      
+      /* check if there is something else on this line */
+      if ($this->scanner->scan('[\h\r]*') !== null) {
+        if ($this->scanner->isEos() || // end of template
+            ($this->scanner->peek(1) == "\n") // end of line
+            ) {
+
+          debug_log("rest of line is whitespace", 'PARSER');
+          /* check if beginning of line is whitespace */
+          $count = count($this->result);
+          $prev = $this->result[$count - 1];
+          $prev2 = array(":foo"); // fake for beginning of multi
+          if ($count > 1) {
+            $prev2 = $this->result[$count - 2];
           }
-          debug_log("after skip '".$this->scanner->peek(10)."'", 'PARSER');
+            
+          debug_log("stack ".print_r($prev, true)." ".print_r($prev2, true), 'PARSER');
+
+          if (($prev != ":multi") &&
+              (($prev === null) // beginning of file = whitespace
+               || ($prev === ":start")
+               || ($prev[0] === ":newline") // new line
+               || ($prev[0] === ":standalone") // new line
+
+               || (($prev[0] === ":static") // static text
+                   && ($prev2 === ":start" ||
+                       $prev2[0] === ":newline") // at line beginning
+                   && preg_match('/^\s*$/', $prev[1])) // is whitespace?
+               )) {
+
+            $isStandalone = true;
+            if ($prev[0] === ":static") {
+              $indentation = $prev[1];
+              array_pop($this->result);
+            } else if ($prev[0] === ":standalone") {
+              array_pop($this->result);
+            }
+
+            /* when at the end of file on an empty line, remove previous newline when handling sections */
+            if ($this->scanner->isEos() &&
+                in_array($type, self::$SECTION_TYPES) &&
+                ($indentation === "") &&
+                (end($this->result) == array(":newline"))) {
+              array_pop($this->result);
+            }
+            
+            //            if ($type != '>') {
+            //              $this->scanner->skip('\n?');
+            //            }
+              $this->scanner->skip('\n?');
+
+            debug_log("standalone tag found, rest '".$this->scanner->peek(10)."'", 'PARSER');
+          }
         }
       }
+
+      if (!$isStandalone) {
+        $this->scanner->unScan();
+      }
+    }
+
+    /* check if there is an empty placeholder tag present */
+    $prev = end($this->result);
+    if (is_array($prev) &&
+        ($prev[0] === ":standalone")) {
+      array_pop($this->result);
     }
 
     /* parse tag type */
@@ -231,6 +279,9 @@ class Parser {
 
     debug_log("finish tag parsing $type$content", 'PARSER');
 
+    if ($isStandalone) {
+      array_push($this->result, array(":standalone")); // insert empty whitespace string for next tag
+    }
   }
 
   public function lastStatic() {
@@ -250,6 +301,7 @@ class Parser {
     $count = count($this->result);
     if ($count > 0) {
       $elt = &$this->result[$count-1];
+
       if ($elt[0] === ":static") {
         $elt[1] = $elt[1].$text;
         return;
@@ -289,14 +341,17 @@ class Parser {
     }
 
     if (!empty($text)) {
-      debug_log("look for eol in '$text': ".strrpos($text, "\n"), 'PARSER');
-      if (preg_match('/\n\h*$/', $text)) {
-        $this->startOfLine = true;
-      } else if (!preg_match('/^\s*$/', $text)) {
-        $this->startOfLine = false;
+      $prev = end($this->result);
+      if ($prev[0] === ":standalone") {
+        array_pop($this->result);
       }
-          
-      $this->addStatic($text);
+      foreach (preg_split('/(\n)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) as $str) {
+        if ($str === "\n") {
+          array_push($this->result, array(":newline"));
+        } else {
+          $this->addStatic($str);
+        }
+      }
     }
   }
 
