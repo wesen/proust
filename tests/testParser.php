@@ -236,6 +236,7 @@ class TestParser extends UnitTestCase {
   public function testCtag() {
     $res = $this->p->compile("{{=[[ ]]}}[[foo]]text{{text}}");
     $this->assertEqual($res, array(":multi",
+                                   array(":mustache", ":tag_change", "[[", "]]"),
                                    array(":mustache", ":etag", "foo"),
                                    array(":static", "text{{text}}")));
 
@@ -243,8 +244,10 @@ class TestParser extends UnitTestCase {
     $this->p = new Mustache\Parser();
     $res = $this->p->compile("{{=[[ ]]}}[[foo]]text[[={{ }}]]{{text}}");
     $this->assertEqual($res, array(":multi",
+                                   array(":mustache", ":tag_change", "[[", "]]"),
                                    array(":mustache", ":etag", "foo"),
                                    array(":static", "text"),
+                                   array(":mustache", ":tag_change", "{{", "}}"),
                                    array(":mustache", ":etag", "text")));
   }
 
@@ -273,8 +276,9 @@ class TestParser extends UnitTestCase {
     $res = $this->p->compile('Hello {{name}}
 You have just won ${{value}}!
 {{#in_ca}}
- Well, ${{taxed_value}}, after taxes.
+Well, ${{taxed_value}}, after taxes.
 {{/in_ca}}');
+    var_dump($res);
     $this->assertEqual($res,
                        array(":multi",
                              array(":static", "Hello "),
@@ -286,9 +290,58 @@ You have just won ${{value}}!
                                    array(":multi",
                                          array(":static", "Well, $"),
                                          array(":mustache", ":etag", "taxed_value"),
-                                         array(":static", ", after taxes.\n")))));
+                                         array(":static", ", after taxes.")))));
   }
 
+  public function testWhitespace() {
+    $res = $this->p->compile(" ");
+    $this->assertEqual($res, array(":multi", array(":static", " ")));
+
+    $res = $this->p->compile("\r\n");
+    $this->assertEqual($res, array(":multi", array(":static", "\r\n")));
+
+    $res = $this->p->compile("\r\n\r\n");
+    $this->assertEqual($res, array(":multi", array(":static", "\r\n\r\n")));
+  }
+
+  public function testWhitespaceTag() {
+    $res = $this->p->compile("\r\n{{tag}}\r\n"); 
+    $this->assertEqual($res, array(":multi",
+                                   array(":static", "\r\n"),
+                                   array(":mustache", ":etag", "tag"),
+                                   array(":static", "\r\n")));
+    $res = $this->p->compile("\r\n  {{tag}}\r\n"); 
+    $this->assertEqual($res, array(":multi",
+                                   array(":static", "\r\n  "),
+                                   array(":mustache", ":etag", "tag"),
+                                   array(":static", "\r\n")));
+  }
+
+  public function testWhitespaceComment() {
+    $res = $this->p->compile("{{! comment }}   ");
+    $this->assertEqual($res, array(":multi"));
+
+    $res = $this->p->compile("   {{! comment }}   ");
+    $this->assertEqual($res, array(":multi"));
+
+    $res = $this->p->compile("   {{! comment }}   \n");
+    $this->assertEqual($res, array(":multi"));
+
+    $res = $this->p->compile("\r\n   {{! comment }}   \n");
+    $this->assertEqual($res, array(":multi",
+                                   array(":static", "\r\n")));
+
+    $res = $this->p->compile("\r\nfoo {{! comment}} bla\r\n blorg\r\n");
+    $this->assertEqual($res, array(":multi",
+                                   array(":static", "\r\nfoo  bla\r\n blorg\r\n")));
+ }
+
+  public function testWhitespaceSection() {
+  }
+
+  public function testWhitespacePartial() {
+  }
+  
 };
 
 ?>
