@@ -8,10 +8,17 @@
 
 $DEBUG = array();
 //array_push($DEBUG, 'PARSER');
+//array_push($DEBUG, 'SCANNER');
 // array_push($DEBUG, 'NOTICE');
 // array_push($DEBUG, 'COMPILER');
 // array_push($DEBUG, 'EVALUATION');
-  
+
+function var_dump_str($obj) {
+  ob_start();
+  var_dump($obj);
+  return ob_get_clean();
+}
+
 function get_class_name($object = null) {
   if (!is_object($object) && !is_string($object)) {
     return false;
