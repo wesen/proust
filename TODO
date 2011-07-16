@@ -8,6 +8,7 @@ X coalesce statics that follow each other
 X fix recognition of non empty lines
 X implement specification testing
 
+- fix partial recursion context stack
 - lambda should receive the raw string
 
 - add partial indentation
