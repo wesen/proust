@@ -54,7 +54,7 @@ class TestGenerator extends UnitTestCase {
 
   function testSection() {
     $ctx = $this->c;
-    $res = $this->g->compile(array(":mustache", ":section", "foo", array(":static", "bla")));
+    $res = $this->g->compile(array(":mustache", ":section", "foo", array(":static", "bla"), 0, 0));
     $ctx = $this->c;
     $this->assertEqual(eval($res), "");
 
@@ -109,7 +109,8 @@ class TestGenerator extends UnitTestCase {
     $res = $this->g->compile(array(":mustache", ":section", "array", array(":multi",
                                                                            array(":mustache", ":etag", "bla"),
                                                                            array(":mustache", ":etag", "foo")
-                                                                           )));
+                                                                           ),
+                                   0, 0));
     $str = eval($res);
     $this->assertEqual($str, "_bla__foo_");
   }

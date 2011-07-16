@@ -189,17 +189,19 @@ class TestParser extends UnitTestCase {
   public function testSimpleSection() {
     $res = $this->p->compile("{{#foo}}{{/foo}}");
     $this->assertEqual($res, array(":multi",
-                                   array(":mustache", ":section", "foo", array(":multi"))));
+                                   array(":mustache", ":section", "foo", array(":multi"), 8, 8)));
 
     $res = $this->p->compile("{{#foo}}text{{/foo}}");
     $this->assertEqual($res, array(":multi",
                                    array(":mustache", ":section", "foo", array(":multi",
-                                                                               array(":static", "text")))));
+                                                                               array(":static", "text")),
+                                         8, 12)));
 
     $res = $this->p->compile("{{#foo}}{{foo}}{{/foo}}");
     $this->assertEqual($res, array(":multi",
                                    array(":mustache", ":section", "foo", array(":multi",
-                                                                               array(":mustache", ":etag", "foo")))));
+                                                                               array(":mustache", ":etag", "foo")),
+                                         8, 15)));
 
     $res = $this->p->compile("{{^foo}}{{/foo}}");
     $this->assertEqual($res, array(":multi",
@@ -220,7 +222,8 @@ class TestParser extends UnitTestCase {
     $res = $this->p->compile("{{#foo}}{{#bla}}{{/bla}}{{/foo}}");
     $this->assertEqual($res, array(":multi",
                                    array(":mustache", ":section", "foo", array(":multi",
-                                                                               array(":mustache", ":section", "bla", array(":multi"))))));
+                                                                               array(":mustache", ":section", "bla", array(":multi"), 16, 16)),
+                                         8, 24)));
   }
 
   public function testUnopenedSection() {
@@ -312,7 +315,8 @@ Well, ${{taxed_value}}, after taxes.
                                    array(":multi",
                                          array(":static", "Well, $"),
                                          array(":mustache", ":etag", "taxed_value"),
-                                         array(":static", ", after taxes.")))));
+                                         array(":static", ", after taxes.")),
+                                   55, 93)));
   }
 
   public function testWhitespace() {
