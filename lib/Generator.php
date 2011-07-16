@@ -17,7 +17,9 @@ class Generator {
   }
 
   public static function escape($str) {
-    return str_replace("'", "\\'", $str);
+    return str_replace(array("\\", "'"),
+                       array("\\\\", "\\'"),
+                       $str);
   }
 
   public static function isAssoc($array) {
