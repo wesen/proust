@@ -58,8 +58,11 @@ class Context implements \ArrayAccess {
     return $this;
   }
 
+  public function output($str) {
+    echo $str;
+  }
+
   public function partial($name) {
-    
     if (in_array($name, $this->partialStack)) {
       return "";
     }
