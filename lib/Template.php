@@ -19,8 +19,8 @@ class Template {
   }
 
   public function render($context) {
-    debug_log("current context ".print_r($context, true), 'COMPILER');
-    $this->code = $this->compile($this->data, $context);
+    debug_log("current context ".print_r($context, true), 'EVALUATION');
+    $this->code = "\$src = '".Generator::escape($this->data)."'; ".$this->compile($this->data, $context);
     debug_log("template code ".print_r($this->code, true), 'COMPILER');
     $this->compiled = eval("return function (\$ctx) { ".$this->code." };");
 
