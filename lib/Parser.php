@@ -96,6 +96,9 @@ class Parser {
 
   /** Find {{mustaches}} and add them to the result array. **/
   public function scanTags() {
+    /* record startpos for closing section tags */
+    $startPos = $this->scanner->pos;
+    
     /* Read in the next tag. */
     if (!$this->scanner->scan(\StringScanner::escape($this->otag))) {
       return;
@@ -135,6 +138,9 @@ class Parser {
         throw new SyntaxError("Unclosed tag with '".$this->scanner->peek(10)."'", $this->getPosition());
       }
     }
+
+    /* record endpos for opening section tags */
+    $endPos = $this->scanner->pos;
     
     debug_log("scanned tag $type$content", 'PARSER');
 
@@ -217,7 +223,7 @@ class Parser {
     switch ($type) {
     case '#':
       $block = array(":multi");
-      array_push($this->result, array(":mustache", ":section", $content, &$block));
+      array_push($this->result, array(":mustache", ":section", $content, &$block, $endPos, 0));
       array_push($this->sections, array("section" => $content,
                                         "position" => $this->getPosition(),
                                         "result" => &$this->result));
@@ -245,6 +251,11 @@ class Parser {
       }
       
       $this->result = &$section["result"];
+      $count = count($this->result);
+      $token = &$this->result[$count-1];
+      if ($token[1] === ":section") {
+        $token[5] = $startPos;
+      }
       break;
 
     case '!':
