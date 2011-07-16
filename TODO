@@ -4,16 +4,16 @@ TODO for Mustache PHP Compiler
 X evaluate lambda result
 X fix recursive partials
 X lambda results should parse with the current delimiters (only when in section)
+X coalesce statics that follow each other
+X fix recognition of non empty lines
+X implement specification testing
 
-- coalesce statics that follow each other
 - lambda should receive the raw string
 
-- fix recognition of non empty lines
 - add partial indentation
 
 - cache compiled partials
 - implement view classes
-- implement specification testing
 - implement different compiler options (enable/disable lambdas for example)
 - speed up context lookup
 - add option to directly include partials into code of calling template
