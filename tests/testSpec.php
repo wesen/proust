@@ -6,8 +6,9 @@
  */
 
 require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
-require_once(dirname(__FILE__)."/../vendor/spyc/spyc.php");
 require_once(dirname(__FILE__)."/../Mustache.php");
+require_once(dirname(__FILE__)."/../vendor/yaml/lib/sfYamlParser.php");
+
 
 
 define('SPEC_DIR', dirname(__FILE__)."/../spec/specs/");
@@ -34,18 +35,25 @@ class TestSpec extends UnitTestCase {
     parent::__construct();
     $this->specs = array();
     $this->tests = array();
+    $parser = new sfYamlParser();
 
     foreach (glob(SPEC_DIR."*.yml") as $file) {
       $name = str_replace(".yml", "", basename($file));
-      $yaml = Spyc::YAMLLOAD($file);
+      $contents = file_get_contents($file);
+      /* hack around sfyaml */
+      $contents = str_replace("!code", "", $contents);
+      
+      $yaml = $parser->parse($contents);
+      /*
       array_walk_recursive($yaml, function (&$x) {
           if (is_numeric($x)) {
-            /* XXX hack around spyc */
-            $x = (float)$x;
+          // XXX hack around spyc
+          $x = (float)$x;
           } else if (is_string($x)) {
-            $x = stripcslashes($x);
+          $x = stripcslashes($x);
           }
-        });
+          });
+      */
       $yaml["name"] = $name;
       $i = 0;
       foreach ($yaml["tests"] as &$test) {
