@@ -11,13 +11,25 @@ namespace Mustache;
 class Generator {
   public $mustache = null;
   public $includePartialCode = false;
+  public $disableLambdas = false;
+  public $disableObject = false;
   
   public function __construct(array $options = array()) {
     $defaults = array("includePartialCode" => false,
+                      "disableLambdas" => false,
+                      "disableIndentation" => false,
                       "mustache" => null);
 
     $options = array_merge($defaults, $options);
     object_set_options($this, $options, array_keys($defaults));
+
+    if ($this->disableIndentation) {
+      $this->outputFunction = 'echo';
+      $this->newlineFunction = 'echo("\n")';
+    } else {
+      $this->outputFunction = "\$ctx->output";
+      $this->newlineFunction = "\$ctx->newline()";
+    }
   }
 
   public function getTokens($code) {
@@ -39,7 +51,9 @@ class Generator {
                       "name" => "f");
     $options = array_merge($defaults, $options);
     
-    $compiledCode = "if (!isset(\$src)) { \$src = array(); }; array_push(\$src, '".self::escape($code)."');\n".$this->compile_sub($tokens)."\narray_pop(\$src);\n";
+    $compiledCode = "if (!isset(\$src)) { \$src = array(); }; ".
+      "array_push(\$src, \n/* template source */\n'".self::escape($code)."'\n);\n".
+      $this->compile_sub($tokens)."\narray_pop(\$src);\n";
     $compiledCodeCapture = "ob_start();\n".$compiledCode."\nreturn ob_get_clean();\n";
 
     switch ($options["type"]) {
@@ -106,7 +120,7 @@ class Generator {
       break;
 
     case ":static":
-      return "\$ctx->output('".self::escape($tokens[1])."');";
+      return $this->outputFunction."('".self::escape($tokens[1])."');";
       break;
 
     case ":mustache":
@@ -119,7 +133,7 @@ class Generator {
       break;
 
     case ":newline":
-      return "\$ctx->newline();";
+      return $this->newlineFunction.";\n";
       break;
 
     default:
@@ -134,34 +148,44 @@ class Generator {
     $name = self::escape($name);
     $functionName = "__section_".self::functionName($name);
     $len = $end - $start;
-    $res = <<<EOD
 
-/* section $name */
-\$v = \$ctx['$name'];
-if (is_callable(\$v)) {
-  Mustache\\Context::PushContext(\$ctx);
-  \$ctx->output(\$ctx->render(\$v(substr(end(\$src), $start, $len))));
-  Mustache\\Context::PopContext(\$ctx);
-} else {
-  \$$functionName = function () use (\$ctx) { $code };
+    $iterationSection = "\$$functionName = function () use (\$ctx) { $code };
 
-  if (is_array(\$v) || \$v instanceof \\Traversable) {
-    if (Mustache\Generator::isAssoc(\$v)) {
-      \$v = array(\$v);
-    }
+if (is_array(\$v) || \$v instanceof \\Traversable) {
+  if (Mustache\Generator::isAssoc(\$v)) {
+    \$ctx->push(\$v);
+    \$$functionName();
+    \$ctx->pop();
+  } else {
     foreach (\$v as \$_v) {
       \$ctx->push(\$_v);
       \$$functionName();
       \$ctx->pop();
     }
-  } else if (\$v) {
-    \$$functionName();
   }
+} else if (\$v) {
+  \$$functionName();
+}";
+    
+    if ($this->disableLambdas) {
+      return "/* section $name */
+\$v = \$ctx['$name'];
+$iterationSection
+/* end section $name */
+";
+    } else {
+      return "/* section $name */
+\$v = \$ctx['$name'];
+if (is_callable(\$v)) {
+  Mustache\\Context::PushContext(\$ctx);
+  ".$this->outputFunction."(\$ctx->render(\$v(substr(end(\$src), $start, $len))));
+  Mustache\\Context::PopContext(\$ctx);
+} else {
+  $iterationSection
 }
 /* end section $name */
-
-EOD;
-return $res;
+";
+    }
   }
 
   public function on_inverted_section($name, $content) {
@@ -172,13 +196,13 @@ return $res;
 
   public function on_partial($name, $indentation) {
     if (!$this->includePartialCode) {
-      return "\$ctx->output(\$ctx->partial('$name', '$indentation'));";
+      return $this->outputFunction."(\$ctx->partial('$name', '$indentation'));";
     } else {
       $m = $this->mustache;
       $ctx = $m->getContext();
       if ($ctx->isPartialRecursion($name)) {
         /* revert to normal partial call. */
-       return "\$ctx->output(\$ctx->partial('$name', '$indentation'));";
+       return $this->outputFunction."(\$ctx->partial('$name', '$indentation'));";
       }
       
       $ctx->pushPartial($name, $indentation);
@@ -195,11 +219,19 @@ return $res;
   }
 
   public function on_utag($name) {
-    return "\$ctx->output(\$ctx->fetch('$name', true, null));";
+    if ($this->disableLambdas) {
+      return $this->outputFunction."(\$ctx->fetch('$name', false, null));";
+    } else {
+      return $this->outputFunction."(\$ctx->fetch('$name', true, null));";
+    }
   }
 
   public function on_etag($name) {
-    return "\$ctx->output(htmlspecialchars(\$ctx->fetch('$name', true, null)));";
+    if ($this->disableLambdas) {
+      return $this->outputFunction."(htmlspecialchars(\$ctx->fetch('$name', false, null)));";
+    } else {
+      return $this->outputFunction."(htmlspecialchars(\$ctx->fetch('$name', true, null)));";
+    }
   }
 
   public function on_tag_change($otag, $ctag) {

@@ -63,7 +63,11 @@ class Mustache implements \ArrayAccess {
     if (!is_a($context, "Mustache\Context")) {
       $context = $this->getContext();
     }
-    return print_r($context->otag, true)."_".print_r($context->ctag, true);
+    $res = print_r($context->otag, true)."_".print_r($context->ctag, true);
+    foreach ($this->compilerOptions as $k => $v) {
+      $res .= "_".$k."_".$v."_";
+    }
+    return $res;
   }
   
   public function getCacheFilename($filename) {
@@ -79,8 +83,8 @@ class Mustache implements \ArrayAccess {
       return $f;
     }
 
-    $name = sha1("code $code ".$this->getTagString($context));
-    
+    $name = "code ".sha1($code)." ".$this->getTagString($context);
+
     if (array_key_exists($name, $this->codeCache)) {
       return $this->codeCache[$name];
     }
@@ -153,6 +157,11 @@ class Mustache implements \ArrayAccess {
     return $this->context;
   }
 
+
+  public function resetContext() {
+    $this->context = null;
+  }
+  
   /***************************************************************************
    *
    * Mustache methods

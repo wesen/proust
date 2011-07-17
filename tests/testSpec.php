@@ -32,11 +32,17 @@ class SpecInvoker extends SimpleInvoker {
 class TestSpec extends UnitTestCase {
 
   public function __construct() {
+    //    ini_set('xdebug.show_exception_trace', 1);
+
     parent::__construct();
     $this->specs = array();
     $this->tests = array();
     $parser = new sfYamlParser();
 
+    $m = new Mustache(array("enableCache" => true,
+                            "cacheDir" => dirname(__FILE__)."/spec.cache"));
+    $m->clearCache();
+    
     foreach (glob(SPEC_DIR."*.yml") as $file) {
       $name = str_replace(".yml", "", basename($file));
       $contents = file_get_contents($file);
@@ -66,7 +72,6 @@ class TestSpec extends UnitTestCase {
         $i++;
       }
       $this->specs[$name] = $yaml;
-      
     }
   }
 
@@ -78,19 +83,22 @@ class TestSpec extends UnitTestCase {
   public function loadSpec($file) {
     return Spyc::YAMLLoad(dirname(__FILE__)."/../spec/specs/$file.yml");
   }
-  
-  public function runTest($test) {
+
+  public function runTestWithMustache($m, $test, $info) {
     /* special hack for one global variable */
     global $calls;
     $calls = 0;
-    
     $this->setUp();
-    $m = new Mustache(array("enableCache" => false));
     if (array_key_exists("partials", $test)) {
       $m->partials = $test["partials"];
     }
-    $res = $m->render($test["template"], $test["data"]);
-    $msg = "Specification error: ".$test["desc"]."\n".
+    try {
+      $res = $m->render($test["template"], $test["data"]);
+    } catch (Exception $e) {
+      throw $e;
+    }
+      
+    $msg = "$info\nSpecification error: ".$test["desc"]."\n".
       "Got :\n------\n*".print_r($res, true)."*\n------\n".
       "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
       "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n";
@@ -98,26 +106,57 @@ class TestSpec extends UnitTestCase {
     
     $this->assertEqual($res, $test["expected"], $msg);
     $this->tearDown();
-
+  }
+  
+  public function runTest($test) {
+    $m = new Mustache(array("enableCache" => false));
+    $this->runTestWithMustache($m, $test, "NORMAL");
 
     /* run again with include partials */
-    $calls = 0;
-
-    $this->setUp();
     $m = new Mustache(array("enableCache" => false,
                             "compilerOptions" => array("includePartialCode" => true)));
-    if (array_key_exists("partials", $test)) {
-      $m->partials = $test["partials"];
-    }
-    $res = $m->render($test["template"], $test["data"]);
-    $msg = "INCLUDE PARTIAL CODE Specification error: ".$test["desc"]."\n".
-      "Got :\n------\n*".print_r($res, true)."*\n------\n".
-      "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
-      "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n";
-    $msg = str_replace('%', '%%', $msg);
+    $this->runTestWithMustache($m, $test, "INCLUDE PARTIALS");
     
-    $this->assertEqual($res, $test["expected"], $msg);
-    $this->tearDown();
+    /* test with disabled lambdas when test is not for lambdas */
+    if (!preg_match("/lambdas/", $test["method_name"])) {
+      $m = new Mustache(array("enableCache" => false,
+                              "compilerOptions" => array("includePartialCode" => true,
+                                                         "disableLambdas" => true)));
+      $this->runTestWithMustache($m, $test, "DISABLED LAMBDAS");
+    }
+
+    if (!preg_match("/partials/", $test["method_name"])) {
+      $m = new Mustache(array("enableCache" => false,
+                              "compilerOptions" => array("disableIndentation" => true)));
+      $this->runTestWithMustache($m, $test, "DISABLED INDENTATION");
+    }
+      
+    
+    /* test caching */
+    $m = new Mustache(array("enableCache" => true,
+                            "cacheDir" => dirname(__FILE__)."/spec.cache"));
+
+    $this->runTestWithMustache($m, $test, "CACHE ENABLED, FIRST RUN");
+    $m->resetContext();
+    $this->runTestWithMustache($m, $test, "CACHE ENABLED, SECOND RUN");
+
+    $m = new Mustache(array("enableCache" => true,
+                            "cacheDir" => dirname(__FILE__)."/spec.cache"));
+    $this->runTestWithMustache($m, $test, "CACHE ENABLED, THIRD RUN");
+    $m->resetContext();
+    $this->runTestWithMustache($m, $test, "CACHE ENABLED, FOURTH RUN");
+
+    /* test caching with different compiler options */
+    if (!preg_match("/lambdas/", $test["method_name"])) {
+      $m = new Mustache(array("enableCache" => true,
+                              "cacheDir" => dirname(__FILE__)."/spec.cache",
+                              "compilerOptions" => array("includePartialCode" => true,
+                                                         "disableLambdas" => true)));
+      $this->runTestWithMustache($m, $test, "CACHE ENABLED, FIRST RUN, WITH OPTIONS");
+      $m->resetContext();
+      $this->runTestWithMustache($m, $test, "CACHE ENABLED, SECOND RUN, WITH OPTIONS");
+    }
+    
   }
 
   public function runSpec($spec) {
