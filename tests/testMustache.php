@@ -34,27 +34,27 @@ class TestMustache extends UnitTestCase {
   function testRender() {
     $m = $this->m;
     
-    $res = $m->renderFile("token1");
+    $res = $m->renderTemplate("token1");
     $this->assertEqual($res, "foo\n");
     /* try again for precompiled version. */
-    $res = $m->renderFile("token1");
+    $res = $m->renderTemplate("token1");
     $this->assertEqual($res, "foo\n");
 
-    $res = $m->renderFile("token2");
+    $res = $m->renderTemplate("token2");
     $this->assertEqual($res, "\n");
     /* try again for precompiled version. */
-    $res = $m->renderFile("token2");
+    $res = $m->renderTemplate("token2");
     $this->assertEqual($res, "\n");
   }
 
   function testRenderSection() {
     $m = $this->m;
-    $res = $m->renderFile("section1");
+    $res = $m->renderTemplate("section1");
     $this->assertEqual($res, "\n");
-    $res = $m->renderFile("section1", array("foo" => array("bla" => "bla")));
+    $res = $m->renderTemplate("section1", array("foo" => array("bla" => "bla")));
     $this->assertEqual($res, "bla\n");
 
-    $res = $m->renderFile("section1", array("foo" => array(array("bla" => "1 "),
+    $res = $m->renderTemplate("section1", array("foo" => array(array("bla" => "1 "),
                                                            array("bla" => "2 "),
                                                            array("bla" => "3 "),
                                                            array("bla" => "4 "),
@@ -64,12 +64,12 @@ class TestMustache extends UnitTestCase {
 
     /* test reloading cached stuff */
     $m = new Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
-    $res = $m->renderFile("section1");
+    $res = $m->renderTemplate("section1");
     $this->assertEqual($res, "\n");
-    $res = $m->renderFile("section1", array("foo" => array("bla" => "bla")));
+    $res = $m->renderTemplate("section1", array("foo" => array("bla" => "bla")));
     $this->assertEqual($res, "bla\n");
 
-    $res = $m->renderFile("section1", array("foo" => array(array("bla" => "1 "),
+    $res = $m->renderTemplate("section1", array("foo" => array(array("bla" => "1 "),
                                                            array("bla" => "2 "),
                                                            array("bla" => "3 "),
                                                            array("bla" => "4 "),
@@ -81,12 +81,12 @@ class TestMustache extends UnitTestCase {
   function testRenderSectionNoCache() {
     $m = $this->m;
     $m->enableCache = false;
-    $res = $m->renderFile("section1");
+    $res = $m->renderTemplate("section1");
     $this->assertEqual($res, "\n");
-    $res = $m->renderFile("section1", array("foo" => array("bla" => "bla")));
+    $res = $m->renderTemplate("section1", array("foo" => array("bla" => "bla")));
     $this->assertEqual($res, "bla\n");
 
-    $res = $m->renderFile("section1", array("foo" => array(array("bla" => "1 "),
+    $res = $m->renderTemplate("section1", array("foo" => array(array("bla" => "1 "),
                                                            array("bla" => "2 "),
                                                            array("bla" => "3 "),
                                                            array("bla" => "4 "),
@@ -96,12 +96,12 @@ class TestMustache extends UnitTestCase {
 
     /* test reloading cached stuff */
     $m = new Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
-    $res = $m->renderFile("section1");
+    $res = $m->renderTemplate("section1");
     $this->assertEqual($res, "\n");
-    $res = $m->renderFile("section1", array("foo" => array("bla" => "bla")));
+    $res = $m->renderTemplate("section1", array("foo" => array("bla" => "bla")));
     $this->assertEqual($res, "bla\n");
 
-    $res = $m->renderFile("section1", array("foo" => array(array("bla" => "1 "),
+    $res = $m->renderTemplate("section1", array("foo" => array(array("bla" => "1 "),
                                                            array("bla" => "2 "),
                                                            array("bla" => "3 "),
                                                            array("bla" => "4 "),
