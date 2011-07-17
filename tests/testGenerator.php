@@ -10,7 +10,7 @@ require_once(dirname(__FILE__)."/../Mustache.php");
 
 class TestGenerator extends UnitTestCase {
   public function setUp() {
-    $this->m = new Mustache();
+    $this->m = new Mustache\Mustache();
     $this->p = new Mustache\Parser();
     $this->g = new Mustache\Generator();
     $this->c = $this->m->getContext();

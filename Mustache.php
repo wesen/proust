@@ -81,7 +81,7 @@ if (defined('STDIN')) {
     $options["templatePath"] = _getopt($opts, "p");
   }
   $options["compilerOptions"] = $compilerOptions;
-  $m = new Mustache($options);
+  $m = new Mustache\Mustache($options);
 
   $methods = array();
   $code = "";

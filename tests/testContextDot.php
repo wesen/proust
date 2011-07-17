@@ -10,7 +10,7 @@ require_once(dirname(__FILE__)."/../Mustache.php");
 
 class TestContextDot extends UnitTestCase {
   function setUp() {
-    $this->m = new Mustache();
+    $this->m = new Mustache\Mustache();
     $this->ctx = $this->m->getContext();
   }
 
