@@ -9,6 +9,9 @@ require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
 require_once(dirname(__FILE__)."/../Mustache.php");
 
 class Foobar {
+  public $e = 38;
+  public $d = 42;
+  
   public function a() {
     return 5;
   }
@@ -119,6 +122,16 @@ class TestContext extends UnitTestCase {
     $this->assertEqual($res(), 7);
   }
 
+  function testField() {
+    $ctx = $this->ctx;
+
+    $ctx->push(new Foobar());
+    $res = $ctx['e'];
+    $this->assertEqual($res, 38);
+    $res = $ctx['d'];
+    $this->assertEqual($res, 42);
+  }
+
   function testRecursion() {
     $ctx = $this->ctx;
     $ctx->push(array("foo" => "bar"));
@@ -149,6 +162,25 @@ class TestContext extends UnitTestCase {
 
   function testPartials() {
     /* XXX */
+  }
+
+  function testLambda() {
+    $ctx = $this->ctx;
+
+    $func = function () { return 4; };
+    $ctx->push(array("a" => $func));
+    $res = $ctx->fetch("a", false, null);
+    $this->assertEqual($res, $func);
+
+    // immediate evaluation
+    $res = $ctx->fetch("a", true, null);
+    $this->assertEqual($res, 4);
+
+    // access context
+    $ctx->push(array("d" => 17,
+                     "b" => function () { $ctx = Mustache\Context::GetContext(); return $ctx["d"] + 5; }));
+    $res = $ctx->fetch("b", true, null);
+    $this->assertEqual($res, 22);
   }
 
 };
