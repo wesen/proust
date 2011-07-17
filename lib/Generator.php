@@ -9,18 +9,12 @@
 namespace Mustache;
 
 class Generator {
-  public $compileToVar = null;
-  public $compileToFunction = null;
-  public $compileToMethod = null;
+  public $mustache = null;
   public $includePartialCode = false;
-  public $context = null;
   
   public function __construct(array $options = array()) {
-    $defaults = array("compileToVar" => null,
-                      "compileToFunction" => null,
-                      "compileToMethod" => null,
-                      "includePartialCode" => false,
-                      "context" => null);
+    $defaults = array("includePartialCode" => false,
+                      "mustache" => null);
 
     $options = array_merge($defaults, $options);
     object_set_options($this, $options, array_keys($defaults));
@@ -28,29 +22,43 @@ class Generator {
 
   public function getTokens($code) {
     $parser = new Parser();
-    $tokens = $parser->parse($code, $this->context);
+    $tokens = $parser->parse($code, $this->mustache->getContext());
     return $tokens;
   }
   
-  public function compileCode($code) {
+  public function compileCode($code, $options = array()) {
     $tokens = $this->getTokens($code);
-    return $this->compile($tokens, $code);
+    if ($tokens === array(":multi")) {
+      return "";
+    }
+    return $this->compile($tokens, $code, $options);
   }
 
-  public function compile($tokens, $code = "") {
-    $compiledCode = "\$src = '".self::escape($code)."'; ob_start();\n".$this->compile_sub($tokens)."\nreturn ob_get_clean();\n";
+  public function compile($tokens, $code = "", $options = array()) {
+    $defaults = array("type" => "captured",
+                      "name" => "f");
+    $options = array_merge($defaults, $options);
+    
+    $compiledCode = "if (!isset(\$src)) { \$src = array(); }; array_push(\$src, '".self::escape($code)."');\n".$this->compile_sub($tokens)."\narray_pop(\$src);\n";
+    $compiledCodeCapture = "ob_start();\n".$compiledCode."\nreturn ob_get_clean();\n";
 
-    if ($this->compileToVar !== null) {
-      return "\$".$this->compileToVar." = function (\$ctx) { $compiledCode };";
-    }
-    if ($this->compileToFunction !== null) {
-      return "function ".$this->compileToFunction." (\$ctx) { $compiledCode };";
-    }
-    if ($this->compileToMethod !== null) {
-      return "function ".$this->compileToFunction." () { \$ctx = \$this->context; $compiledCode };";
-    }
+    switch ($options["type"]) {
+    case "variable":
+      return "\$".$options["name"]." = function (\$ctx) { $compiledCodeCapture };";
+      
+    case "function":
+      return "function ".$options["name"]." (\$ctx) { $compiledCodeCapture };";
+      
+    case "method":
+      return "function ".$options["method"]." () { \$ctx = \$this->context; $compiledCodeCapture };";
 
-    return $compiledCode;
+    case "captured":
+      return $compiledCodeCapture;
+
+    case "raw":
+    default:
+      return $compiledCode;
+    }
   }
 
   public static function escape($str) {
@@ -132,7 +140,7 @@ class Generator {
 \$v = \$ctx['$name'];
 if (is_callable(\$v)) {
   Mustache\\Context::PushContext(\$ctx);
-  \$ctx->output(\$ctx->render(\$v(substr(\$src, $start, $len))));
+  \$ctx->output(\$ctx->render(\$v(substr(end(\$src), $start, $len))));
   Mustache\\Context::PopContext(\$ctx);
 } else {
   \$$functionName = function () use (\$ctx) { $code };
@@ -150,6 +158,8 @@ if (is_callable(\$v)) {
     \$$functionName();
   }
 }
+/* end section $name */
+
 EOD;
 return $res;
   }
@@ -157,11 +167,21 @@ return $res;
   public function on_inverted_section($name, $content) {
     $code = $this->compile_sub($content);
     $name = self::escape($name);
-    return "\$v = \$ctx['$name']; if (!\$v && (\$v !== 0)) { $code }";
+    return "/* inverted section $name */\n\$v = \$ctx['$name']; if (!\$v && (\$v !== 0)) { $code }\n";
   }
 
   public function on_partial($name, $indentation) {
-    return "\$ctx->output(\$ctx->partial('$name', '$indentation'));";
+    if (!$this->includePartialCode) {
+      return "\$ctx->output(\$ctx->partial('$name', '$indentation'));";
+    } else {
+      $m = $this->mustache;
+      $ctx = $m->getContext();
+      $ctx->pushPartial($name, $indentation);
+      $code = $m->getPartial($name);
+      $res = $this->compileCode($code, array("type" => "raw"));
+      $ctx->popPartial($name);
+      return "/* partial included code $name */\n".$res."\n/* end partial include $name */\n";
+    }
   }
 
   public function on_utag($name) {
