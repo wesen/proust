@@ -30,7 +30,23 @@ function methodCallClosure($a, $name) {
 class Context implements \ArrayAccess {
   protected $stack = null;
   protected $partialStack = null;
-  
+
+  /* Keep a stack of global contexts for lambdas */
+  static $GLOBAL_CONTEXT = array();
+
+  public static function GetContext() {
+    return self::$GLOBAL_CONTEXT[0];
+  }
+
+  public static function PushContext($ctx) {
+    array_unshift(self::$GLOBAL_CONTEXT, $ctx);
+  }
+
+  public static function PopContext() {
+    array_pop(self::$GLOBAL_CONTEXT);
+  }
+
+  /* actual context implementation */
   public function __construct($_mustache) {
     $this->mustache = $_mustache;
     $this->stack = array($_mustache);
@@ -112,41 +128,89 @@ class Context implements \ArrayAccess {
     return $m->render($string, $this);
   }
 
+  public function __fetch($a, $name) {
+    debug_log("fetching '".print_r($name, true)."' from ".print_r($a, true), 'CONTEXT');
+    if (is_a($a, "Mustache\Context")) {
+      return $a->fetch($name);
+    }
+    
+    if (($a instanceof \ArrayAccess) || (is_array($a))) {
+      if (array_key_exists($name, $a)) {
+        return $a[$name];
+      } else if (array_key_exists((string)$name, $a)) {
+        return $a[(string)$name];
+      }
+    } elseif (is_object($a)) {
+      $vars = get_object_vars($a);
+      if (array_key_exists($name, $vars)) {
+        return $vars[$name];
+      } else if (method_exists($a, $name)) {
+        $res = function ($text = "") use ($a, $name) {
+          return $a->$name($text);
+        };
+        return $res;
+      }
+    }
+
+    throw new ContextMissException("Can't find $name in ".print_r($a, true));
+  }
+
   public function fetch($name, $evalDirectly = false, $default = '__raise') {
+    if ($name === ".") {
+      return $this->stack[0];
+    }
+    
+    $list = explode(".", $name);
+    debug_log("fetching ".print_r($list, true), 'CONTEXT');
+
+    $res = null;
+
+    $found = false;
+    
     foreach ($this->stack as $a) {
       /* avoid recursion */
       if (($a == $this->mustache) || ($a == $this)) {
         continue;
       }
+
       $res = null;
 
-      if (($a instanceof \ArrayAccess) || (is_array($a))) {
-        if (isset($a[$name])) {
-          $res = $a[$name];
-        } else if (isset($a[(string)$name])) {
-          $res = $a[(string)$name];
+      $found = false;
+      try {
+        foreach ($list as $part) {
+          if ($part === "") {
+            /* XXX syntax error */
+            return null;
+          }
+          $res = $this->__fetch($a, $part);
+          $a = $res;
         }
-      } elseif (method_exists($a, $name)) {
-        $res = function ($text = "") use ($a, $name) {
-          return $a->$name($text);
-        };
+        $found = true;
+      } catch (ContextMissException $e) {
+        $found = false;
       }
-      if ($res !== null) {
-        if (is_callable($res) && $evalDirectly) {
-          // temporarily reset to default delimiters for immediate lambda return
-          $ctag = $this->ctag;
-          $otag = $this->otag;
-          $this->ctag = $this->otag = null;
-          $str = $this->render($res());
-          $this->ctag = $ctag;
-          $this->otag = $otag;
-          return $str;
-        } else {
-          return $res;
-        }
+      
+      if ($found) {
+        break;
       }
     }
-    
+
+    if ($found) {
+      if (is_callable($res) && $evalDirectly) {
+        // temporarily reset to default delimiters for immediate lambda return
+        $ctag = $this->ctag;
+        $otag = $this->otag;
+        $this->ctag = $this->otag = null;
+        Context::PushContext($this);
+        $str = $this->render($res());
+        Context::PopContext();
+        $this->ctag = $ctag;
+        $this->otag = $otag;
+        return $str;
+      } else {
+        return $res;
+      }
+    }
 
     if (($default == '__raise') || $this->getMustacheInStack()->raiseOnContextMiss) {
       throw new ContextMissException("Can't find $name in ".print_r($this->stack, true));
