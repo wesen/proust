@@ -16,12 +16,16 @@
 namespace Mustache;
 
 class Template {
-  public function __construct($context = null) {
-    if ($context === null) {
-      $this->context = new Context();
-    } else {
-      $this->context = $context;
+  public function __construct($mustache = null) {
+    if ($mustache === null) {
+      $mustache = new \Mustache();
     }
+    $this->mustache = $mustache;
+    $this->context = $mustache->getContext();
+  }
+
+  public function __call($name, $arguments) {
+    return $this->mustache->renderPartial($name);
   }
 };
 
@@ -139,8 +143,7 @@ class Generator {
       
     case "method":
       return "function ".$options["name"]." (\$data = null) {\n".
-        "  \$ctx = \$this->context;\n".
-        "  if (\$data) { \$ctx->reset(\$data); }\n".
+        "  \$ctx = \$this->context; \$ctx->reset(\$data);\n".
         "  $compiledCodeCapture\n".
         "}\n";
 
@@ -255,8 +258,9 @@ if (is_callable(\$v)) {
 
   public function on_partial($name, $indentation) {
     if ($this->compileClass) {
+      // use echo here because we already handled indentation in the partial itself
       $str = "\$ctx->pushPartial('$name', '$indentation');\n".
-        $this->outputFunction."(\$this->".self::functionName($name)."());\n".
+        "echo (\$this->".self::functionName($name)."());\n".
         "\$ctx->popPartial('$name');\n".
         "/* end partial include $name */\n";
     } else {
