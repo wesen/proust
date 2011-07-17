@@ -11,9 +11,12 @@ namespace Mustache;
 class Generator {
   public $mustache = null;
   public $includePartialCode = false;
+  public $disableLambdas = false;
+  public $disableObject = false;
   
   public function __construct(array $options = array()) {
     $defaults = array("includePartialCode" => false,
+                      "disableLambdas" => false,
                       "mustache" => null);
 
     $options = array_merge($defaults, $options);
@@ -134,34 +137,44 @@ class Generator {
     $name = self::escape($name);
     $functionName = "__section_".self::functionName($name);
     $len = $end - $start;
-    $res = <<<EOD
 
-/* section $name */
+    $iterationSection = "\$$functionName = function () use (\$ctx) { $code };
+
+if (is_array(\$v) || \$v instanceof \\Traversable) {
+  if (Mustache\Generator::isAssoc(\$v)) {
+    \$ctx->push(\$v);
+    \$$functionName();
+    \$ctx->pop();
+  } else {
+    foreach (\$v as \$_v) {
+      \$ctx->push(\$_v);
+      \$$functionName();
+      \$ctx->pop();
+    }
+  }
+} else if (\$v) {
+  \$$functionName();
+}";
+    
+    if ($this->disableLambdas) {
+      return "/* section $name */
+\$v = \$ctx['$name'];
+$iterationSection
+/* end section $name */
+";
+    } else {
+      return "/* section $name */
 \$v = \$ctx['$name'];
 if (is_callable(\$v)) {
   Mustache\\Context::PushContext(\$ctx);
   \$ctx->output(\$ctx->render(\$v(substr(end(\$src), $start, $len))));
   Mustache\\Context::PopContext(\$ctx);
 } else {
-  \$$functionName = function () use (\$ctx) { $code };
-
-  if (is_array(\$v) || \$v instanceof \\Traversable) {
-    if (Mustache\Generator::isAssoc(\$v)) {
-      \$v = array(\$v);
-    }
-    foreach (\$v as \$_v) {
-      \$ctx->push(\$_v);
-      \$$functionName();
-      \$ctx->pop();
-    }
-  } else if (\$v) {
-    \$$functionName();
-  }
+  $iterationSection
 }
 /* end section $name */
-
-EOD;
-return $res;
+";
+    }
   }
 
   public function on_inverted_section($name, $content) {
@@ -195,11 +208,19 @@ return $res;
   }
 
   public function on_utag($name) {
-    return "\$ctx->output(\$ctx->fetch('$name', true, null));";
+    if ($this->disableLambdas) {
+      return "\$ctx->output(\$ctx->fetch('$name', false, null));";
+    } else {
+      return "\$ctx->output(\$ctx->fetch('$name', true, null));";
+    }
   }
 
   public function on_etag($name) {
-    return "\$ctx->output(htmlspecialchars(\$ctx->fetch('$name', true, null)));";
+    if ($this->disableLambdas) {
+      return "\$ctx->output(htmlspecialchars(\$ctx->fetch('$name', false, null)));";
+    } else {
+      return "\$ctx->output(htmlspecialchars(\$ctx->fetch('$name', true, null)));";
+    }
   }
 
   public function on_tag_change($otag, $ctag) {
