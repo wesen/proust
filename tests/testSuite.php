@@ -10,6 +10,7 @@ class MustacheTestSuite extends TestSuite {
     $this->addFile(dirname(__FILE__)."/testHelpers.php");
     $this->addFile(dirname(__FILE__)."/testMustache.php");
     $this->addFile(dirname(__FILE__)."/testContext.php");
+    $this->addFile(dirname(__FILE__)."/testContextDot.php");
     $this->addFile(dirname(__FILE__)."/testParser.php");
     $this->addFile(dirname(__FILE__)."/testGenerator.php");
     //    $this->addFile(dirname(__FILE__)."/testSpec.php");

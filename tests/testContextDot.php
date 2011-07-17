@@ -8,16 +8,6 @@
 require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
 require_once(dirname(__FILE__)."/../Mustache.php");
 
-class Foobar {
-  public function a() {
-    return 5;
-  }
-
-  public function c() {
-    return 7;
-  }
-};
-
 class TestContextDot extends UnitTestCase {
   function setUp() {
     $this->m = new Mustache();
