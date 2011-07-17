@@ -16,12 +16,12 @@
 namespace Mustache;
 
 class Template {
-  public function __construct($context = null) {
-    if ($context === null) {
-      $this->context = new Context();
-    } else {
-      $this->context = $context;
+  public function __construct($mustache = null) {
+    if ($mustache === null) {
+      $mustache = new \Mustache();
     }
+    $this->mustache = $mustache;
+    $this->context = $mustache->getContext();
   }
 };
 

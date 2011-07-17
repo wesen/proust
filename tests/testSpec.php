@@ -28,12 +28,8 @@ class SpecInvoker extends SimpleInvoker {
   }
 }
 
-
 class TestSpec extends UnitTestCase {
-
   public function __construct() {
-    //    ini_set('xdebug.show_exception_trace', 1);
-
     parent::__construct();
     $this->specs = array();
     $this->tests = array();
@@ -42,6 +38,8 @@ class TestSpec extends UnitTestCase {
     $m = new Mustache(array("enableCache" => true,
                             "cacheDir" => dirname(__FILE__)."/spec.cache"));
     $m->clearCache();
+
+    $methods = array();
     
     foreach (glob(SPEC_DIR."*.yml") as $file) {
       $name = str_replace(".yml", "", basename($file));
@@ -50,16 +48,6 @@ class TestSpec extends UnitTestCase {
       $contents = str_replace("!code", "", $contents);
       
       $yaml = $parser->parse($contents);
-      /*
-      array_walk_recursive($yaml, function (&$x) {
-          if (is_numeric($x)) {
-          // XXX hack around spyc
-          $x = (float)$x;
-          } else if (is_string($x)) {
-          $x = stripcslashes($x);
-          }
-          });
-      */
       $yaml["name"] = $name;
       $i = 0;
       foreach ($yaml["tests"] as &$test) {
@@ -67,36 +55,59 @@ class TestSpec extends UnitTestCase {
           $code = "return function (\$text = \"\") { ".$test["data"]["lambda"]["php"]." };";
           $test["data"]["lambda"] = eval($code);
         }
+        $name = preg_replace('/[^a-zA-Z0-9]/', '_', $name);
         $test["method_name"] = "$name"."_".$i;
+
+        array_push($methods, array($test["method_name"], $test["template"]));
         $this->tests[$name."_$i"] = $test;
         $i++;
       }
       $this->specs[$name] = $yaml;
     }
+
+    $classCode = $m->compileClass("Specs", $methods);
+    file_put_contents("/tmp/specs.php", $classCode);
+    eval($classCode);
+    $this->obj = new Specs($m);
   }
+
+  public function setUp() {
+    /* special hack for one global variable */
+    global $calls;
+    $calls = 0;
+  }    
 
   function createInvoker() {
     return new SimpleErrorTrappingInvoker(
                                           new SimpleExceptionTrappingInvoker(new SpecInvoker($this)));
   }
-  
-  public function loadSpec($file) {
-    return Spyc::YAMLLoad(dirname(__FILE__)."/../spec/specs/$file.yml");
-  }
 
+  public function runTestWithObject($test) {
+    $this->setUp();
+    $methodName = $test["method_name"];
+    $res = $this->obj->$methodName($test["data"]);
+    $info = "CLASS CALLING";
+    
+    if (array_key_exists("partials", $test)) {
+      $this->object->mustache->partials = $test["partials"];
+    }
+    
+    $msg = "$info\nSpecification error: ".$test["desc"]."\n".
+      "Got :\n------\n*".print_r($res, true)."*\n------\n".
+      "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
+      "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n";
+    $msg = str_replace('%', '%%', $msg);
+    
+    $this->assertEqual($res, $test["expected"], $msg);
+    $this->tearDown();
+  }
+  
   public function runTestWithMustache($m, $test, $info) {
-    /* special hack for one global variable */
-    global $calls;
-    $calls = 0;
     $this->setUp();
     if (array_key_exists("partials", $test)) {
       $m->partials = $test["partials"];
     }
-    try {
-      $res = $m->render($test["template"], $test["data"]);
-    } catch (Exception $e) {
-      throw $e;
-    }
+    $res = $m->render($test["template"], $test["data"]);
       
     $msg = "$info\nSpecification error: ".$test["desc"]."\n".
       "Got :\n------\n*".print_r($res, true)."*\n------\n".
@@ -125,7 +136,12 @@ class TestSpec extends UnitTestCase {
       $this->runTestWithMustache($m, $test, "DISABLED LAMBDAS");
     }
 
+    if (!array_key_exists("partials", $test)) {
+      $this->runTestWithObject($test);
+    }
+        
     if (!preg_match("/partials/", $test["method_name"])) {
+      
       $m = new Mustache(array("enableCache" => false,
                               "compilerOptions" => array("disableIndentation" => true)));
       $this->runTestWithMustache($m, $test, "DISABLED INDENTATION");
