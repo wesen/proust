@@ -101,14 +101,14 @@ class Context implements \ArrayAccess {
 
     /* TODO check for already compiled partial with current ctag / otag */
     
-    $m = $this->getMustacheInStack();
-    $partial = $m->partial($name);
-
     // temporarily reset to default delimiters for immediate lambda return
     $ctag = $this->ctag;
     $otag = $this->otag;
     $this->ctag = $this->otag = null;
-    $res = $this->render($partial);
+
+    $m = $this->getMustacheInStack();
+    $res = $m->renderPartial($name, $this);
+
     $this->ctag = $ctag;
     $this->otag = $otag;
 
