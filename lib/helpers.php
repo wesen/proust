@@ -17,7 +17,7 @@ $DEBUG = array();
 function array_clean($array, $allowed_keys) {
   foreach ($array as $k => $v) {
     if (!in_array($k, $allowed_keys)) {
-      unset($array[$key]);
+      unset($array[$k]);
     }
   }
   return $array;

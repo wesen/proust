@@ -80,6 +80,10 @@ class TestSpec extends UnitTestCase {
   }
   
   public function runTest($test) {
+    /* special hack for one global variable */
+    global $calls;
+    $calls = 0;
+    
     $this->setUp();
     $m = new Mustache(array("enableCache" => false));
     if (array_key_exists("partials", $test)) {
@@ -87,6 +91,26 @@ class TestSpec extends UnitTestCase {
     }
     $res = $m->render($test["template"], $test["data"]);
     $msg = "Specification error: ".$test["desc"]."\n".
+      "Got :\n------\n*".print_r($res, true)."*\n------\n".
+      "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
+      "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n";
+    $msg = str_replace('%', '%%', $msg);
+    
+    $this->assertEqual($res, $test["expected"], $msg);
+    $this->tearDown();
+
+
+    /* run again with include partials */
+    $calls = 0;
+
+    $this->setUp();
+    $m = new Mustache(array("enableCache" => false,
+                            "compilerOptions" => array("includePartialCode" => true)));
+    if (array_key_exists("partials", $test)) {
+      $m->partials = $test["partials"];
+    }
+    $res = $m->render($test["template"], $test["data"]);
+    $msg = "INCLUDE PARTIAL CODE Specification error: ".$test["desc"]."\n".
       "Got :\n------\n*".print_r($res, true)."*\n------\n".
       "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
       "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n";
