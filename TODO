@@ -8,11 +8,10 @@ X coalesce statics that follow each other
 X fix recognition of non empty lines
 X implement specification testing
 X add partial indentation
+X fix partial recursion context stack
+X lambda should receive the raw string -> store pos in source, add source at beginning of compile
 
-- fix partial recursion context stack
-- lambda should receive the raw string -> store pos in source, add source at beginning of compile
 - store current context in context stack for lambdas
-
 - cache compiled partials
 - implement view classes
 - implement different compiler options (enable/disable lambdas for example)
