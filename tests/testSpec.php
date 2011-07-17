@@ -66,8 +66,8 @@ class TestSpec extends UnitTestCase {
     }
 
     $classCode = $m->compileClass("Specs", $methods);
-    file_put_contents("/tmp/specs.php", $classCode);
     eval($classCode);
+    $m = new Mustache(array("enableCache" => false));
     $this->obj = new Specs($m);
   }
 
@@ -85,12 +85,13 @@ class TestSpec extends UnitTestCase {
   public function runTestWithObject($test) {
     $this->setUp();
     $methodName = $test["method_name"];
+
+    if (array_key_exists("partials", $test)) {
+      $this->obj->mustache->partials = $test["partials"];
+    }
+
     $res = $this->obj->$methodName($test["data"]);
     $info = "CLASS CALLING";
-    
-    if (array_key_exists("partials", $test)) {
-      $this->object->mustache->partials = $test["partials"];
-    }
     
     $msg = "$info\nSpecification error: ".$test["desc"]."\n".
       "Got :\n------\n*".print_r($res, true)."*\n------\n".
@@ -136,12 +137,9 @@ class TestSpec extends UnitTestCase {
       $this->runTestWithMustache($m, $test, "DISABLED LAMBDAS");
     }
 
-    if (!array_key_exists("partials", $test)) {
-      $this->runTestWithObject($test);
-    }
+    $this->runTestWithObject($test);
         
     if (!preg_match("/partials/", $test["method_name"])) {
-      
       $m = new Mustache(array("enableCache" => false,
                               "compilerOptions" => array("disableIndentation" => true)));
       $this->runTestWithMustache($m, $test, "DISABLED INDENTATION");
