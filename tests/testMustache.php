@@ -18,17 +18,13 @@ require_once(dirname(__FILE__).'/classDefs.php');
 class TestMustache extends UnitTestCase {
   function setUp() {
     $this->m = new Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
+    $this->m->clearCache();
+  }
+
+  function tearDown() {
+    $this->m->clearCache();
   }
   
-  function testPartial() {
-    $m = new Mustache();
-    $m->templatePath = (dirname(__FILE__)."/files/");
-    $res = $m->partial("testPartial");
-    $this->assertEqual($res, "partial {{mustache}}\n");
-
-    /* XXX test partial evaluation */
-  }
-
   function testSetters() {
     $res = new Mustache();
     $this->assertEqual($res->templatePath, ".");
@@ -65,9 +61,55 @@ class TestMustache extends UnitTestCase {
                                                            array("bla" => "5 ")
                                                            )));
     $this->assertEqual($res, "1 2 3 4 5 \n");
-    
+
+    /* test reloading cached stuff */
+    $m = new Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
+    $res = $m->renderFile("section1");
+    $this->assertEqual($res, "\n");
+    $res = $m->renderFile("section1", array("foo" => array("bla" => "bla")));
+    $this->assertEqual($res, "bla\n");
+
+    $res = $m->renderFile("section1", array("foo" => array(array("bla" => "1 "),
+                                                           array("bla" => "2 "),
+                                                           array("bla" => "3 "),
+                                                           array("bla" => "4 "),
+                                                           array("bla" => "5 ")
+                                                           )));
+    $this->assertEqual($res, "1 2 3 4 5 \n");
   }
 
+  function testRenderSectionNoCache() {
+    $m = $this->m;
+    $m->enableCache = false;
+    $res = $m->renderFile("section1");
+    $this->assertEqual($res, "\n");
+    $res = $m->renderFile("section1", array("foo" => array("bla" => "bla")));
+    $this->assertEqual($res, "bla\n");
+
+    $res = $m->renderFile("section1", array("foo" => array(array("bla" => "1 "),
+                                                           array("bla" => "2 "),
+                                                           array("bla" => "3 "),
+                                                           array("bla" => "4 "),
+                                                           array("bla" => "5 ")
+                                                           )));
+    $this->assertEqual($res, "1 2 3 4 5 \n");
+
+    /* test reloading cached stuff */
+    $m = new Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
+    $res = $m->renderFile("section1");
+    $this->assertEqual($res, "\n");
+    $res = $m->renderFile("section1", array("foo" => array("bla" => "bla")));
+    $this->assertEqual($res, "bla\n");
+
+    $res = $m->renderFile("section1", array("foo" => array(array("bla" => "1 "),
+                                                           array("bla" => "2 "),
+                                                           array("bla" => "3 "),
+                                                           array("bla" => "4 "),
+                                                           array("bla" => "5 ")
+                                                           )));
+    $this->assertEqual($res, "1 2 3 4 5 \n");
+  }
+  
   function testLambdaContext() {
     $m = $this->m;
     $res = $m->render("{{foo}}",
