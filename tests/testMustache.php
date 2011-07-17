@@ -17,7 +17,7 @@ require_once(dirname(__FILE__).'/classDefs.php');
 
 class TestMustache extends UnitTestCase {
   function setUp() {
-    $this->m = new Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
+    $this->m = new Mustache\Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
     $this->m->clearCache();
   }
 
@@ -26,7 +26,7 @@ class TestMustache extends UnitTestCase {
   }
   
   function testSetters() {
-    $res = new Mustache();
+    $res = new Mustache\Mustache();
     $this->assertEqual($res->templatePath, ".");
     $this->assertEqual($res->templateExtension, "mustache");
   }
@@ -63,7 +63,7 @@ class TestMustache extends UnitTestCase {
     $this->assertEqual($res, "1 2 3 4 5 \n");
 
     /* test reloading cached stuff */
-    $m = new Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
+    $m = new Mustache\Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
     $res = $m->renderTemplate("section1");
     $this->assertEqual($res, "\n");
     $res = $m->renderTemplate("section1", array("foo" => array("bla" => "bla")));
@@ -95,7 +95,7 @@ class TestMustache extends UnitTestCase {
     $this->assertEqual($res, "1 2 3 4 5 \n");
 
     /* test reloading cached stuff */
-    $m = new Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
+    $m = new Mustache\Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
     $res = $m->renderTemplate("section1");
     $this->assertEqual($res, "\n");
     $res = $m->renderTemplate("section1", array("foo" => array("bla" => "bla")));

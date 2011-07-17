@@ -27,7 +27,7 @@ class TestContext extends UnitTestCase {
   }
 
   function setUp() {
-    $this->m = new Mustache();
+    $this->m = new Mustache\Mustache();
     $this->ctx = $this->m->getContext();
   }
   

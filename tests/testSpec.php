@@ -35,7 +35,7 @@ class TestSpec extends UnitTestCase {
     $this->tests = array();
     $parser = new sfYamlParser();
 
-    $m = new Mustache(array("enableCache" => true,
+    $m = new Mustache\Mustache(array("enableCache" => true,
                             "cacheDir" => dirname(__FILE__)."/spec.cache"));
     $m->clearCache();
 
@@ -67,7 +67,7 @@ class TestSpec extends UnitTestCase {
 
     $classCode = $m->compileClass("Specs", $methods);
     eval($classCode);
-    $m = new Mustache(array("enableCache" => false));
+    $m = new Mustache\Mustache(array("enableCache" => false));
     $this->obj = new Specs($m);
   }
 
@@ -121,17 +121,17 @@ class TestSpec extends UnitTestCase {
   }
   
   public function runTest($test) {
-    $m = new Mustache(array("enableCache" => false));
+    $m = new Mustache\Mustache(array("enableCache" => false));
     $this->runTestWithMustache($m, $test, "NORMAL");
 
     /* run again with include partials */
-    $m = new Mustache(array("enableCache" => false,
+    $m = new Mustache\Mustache(array("enableCache" => false,
                             "compilerOptions" => array("includePartialCode" => true)));
     $this->runTestWithMustache($m, $test, "INCLUDE PARTIALS");
     
     /* test with disabled lambdas when test is not for lambdas */
     if (!preg_match("/lambdas/", $test["method_name"])) {
-      $m = new Mustache(array("enableCache" => false,
+      $m = new Mustache\Mustache(array("enableCache" => false,
                               "compilerOptions" => array("includePartialCode" => true,
                                                          "disableLambdas" => true)));
       $this->runTestWithMustache($m, $test, "DISABLED LAMBDAS");
@@ -140,21 +140,21 @@ class TestSpec extends UnitTestCase {
     $this->runTestWithObject($test);
         
     if (!preg_match("/partials/", $test["method_name"])) {
-      $m = new Mustache(array("enableCache" => false,
+      $m = new Mustache\Mustache(array("enableCache" => false,
                               "compilerOptions" => array("disableIndentation" => true)));
       $this->runTestWithMustache($m, $test, "DISABLED INDENTATION");
     }
       
     
     /* test caching */
-    $m = new Mustache(array("enableCache" => true,
+    $m = new Mustache\Mustache(array("enableCache" => true,
                             "cacheDir" => dirname(__FILE__)."/spec.cache"));
 
     $this->runTestWithMustache($m, $test, "CACHE ENABLED, FIRST RUN");
     $m->resetContext();
     $this->runTestWithMustache($m, $test, "CACHE ENABLED, SECOND RUN");
 
-    $m = new Mustache(array("enableCache" => true,
+    $m = new Mustache\Mustache(array("enableCache" => true,
                             "cacheDir" => dirname(__FILE__)."/spec.cache"));
     $this->runTestWithMustache($m, $test, "CACHE ENABLED, THIRD RUN");
     $m->resetContext();
@@ -162,7 +162,7 @@ class TestSpec extends UnitTestCase {
 
     /* test caching with different compiler options */
     if (!preg_match("/lambdas/", $test["method_name"])) {
-      $m = new Mustache(array("enableCache" => true,
+      $m = new Mustache\Mustache(array("enableCache" => true,
                               "cacheDir" => dirname(__FILE__)."/spec.cache",
                               "compilerOptions" => array("includePartialCode" => true,
                                                          "disableLambdas" => true)));
