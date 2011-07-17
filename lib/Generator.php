@@ -176,10 +176,16 @@ return $res;
     } else {
       $m = $this->mustache;
       $ctx = $m->getContext();
+      if ($ctx->isPartialRecursion($name)) {
+        /* revert to normal partial call. */
+       return "\$ctx->output(\$ctx->partial('$name', '$indentation'));";
+      }
+      
       $ctx->pushPartial($name, $indentation);
       $code = $m->getPartial($name);
       $res = $this->compileCode($code, array("type" => "raw"));
       $ctx->popPartial($name);
+
       return "/* partial included code $name */\n".
         "\$ctx->pushPartial('$name', '$indentation');\n".
         $res."\n".
