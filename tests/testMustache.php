@@ -139,6 +139,32 @@ class TestMustache extends UnitTestCase {
     
   }
 
+  function testLambdaContext() {
+    $m = new Mustache();
+    $res = $m->render("{{foo}}",
+                      array("a" => 42,
+                            "foo" => function () { $ctx = Mustache\Context::GetContext(); return $ctx['a']; }));
+    $this->assertEqual($res, 42);
+
+    $res = $m->render("{{#foo}}{{a}}{{/foo}}",
+                      array("a" => 42,
+                            "foo" => function ($text) { return $text; }));
+    $this->assertEqual($res, 42);
+
+    $res = $m->render("{{#foo}}{{a}}{{/foo}}",
+                      array("a" => 42,
+                            "foo" => function ($text) { return $text.$text; }));
+    $this->assertEqual($res, 4242);
+
+    $res = $m->render("{{#foo}}{{a}}{{/foo}}",
+                      array("b" => 42,
+                            "a" => 100,
+                            "c" => "{{b}}",
+                            "foo" => function ($text) { $ctx = Mustache\Context::GetContext(); $c = $ctx['c']; return $text.$c.$text; }));
+    $this->assertEqual($res, 10042100);
+    
+  }
+
 };
 
 ?>
