@@ -8,6 +8,8 @@
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
+namespace Mustache;
+
 require_once(dirname(__FILE__).'/Context.php');
 require_once(dirname(__FILE__).'/Parser.php');
 require_once(dirname(__FILE__).'/Generator.php');
@@ -61,7 +63,7 @@ class Mustache implements \ArrayAccess {
 
   /* Store ctag, otag and compiler options as part of the cache name */
   public function getTagString($context) {
-    if (!is_a($context, "Mustache\Context")) {
+    if (!is_a($context, "Context")) {
       $context = $this->getContext();
     }
     $res = print_r($context->otag, true)."_".print_r($context->ctag, true);
@@ -158,7 +160,7 @@ class Mustache implements \ArrayAccess {
   /** context **/
   public function getContext() {
     if ($this->context == null) {
-      $this->context = new Mustache\Context($this);
+      $this->context = new Context($this);
     } 
     return $this->context;
   }
@@ -249,7 +251,7 @@ class Mustache implements \ArrayAccess {
 
   /* Get the tokenized version of $code. */
   public function getTokens($code, $context = null) {
-    $parser = new Mustache\Parser();
+    $parser = new Parser();
     $tokens = $parser->parse($code, $context);
     return $tokens;
   }
@@ -264,7 +266,7 @@ class Mustache implements \ArrayAccess {
                            $options);
     
     
-    $generator = new Mustache\Generator($compilerOptions);
+    $generator = new Generator($compilerOptions);
     $compiledCode = $generator->compileCode($code, $options);
 
     return $compiledCode;
@@ -274,7 +276,7 @@ class Mustache implements \ArrayAccess {
     $compilerOptions = $this->compilerOptions;
     $compilerOptions["mustache"] = $this;
 
-    $generator = new Mustache\Generator($compilerOptions);
+    $generator = new Generator($compilerOptions);
     return $generator->compileClass($name, $methods);
   }
 
