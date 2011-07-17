@@ -60,7 +60,17 @@ class Parser {
     /* nothing special happens here. */
   }
 
-  public function compile($src) {
+  public function parse($src, $context = null) {
+    if (is_a($context, "Mustache\Context")) {
+      /* weird mixture of evaluation context and compilation context, but so it is. */
+      if ($context->otag !== null) {
+        $this->otag = $context->otag;
+      }
+      if ($context->ctag !== null) {
+        $this->ctag = $context->ctag;
+      }
+    }
+    
     debug_log("Starting parsing", 'PARSER');
     $this->sections = array();
     $this->result = array(":start");
