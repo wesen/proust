@@ -15,10 +15,14 @@ require_once('lib/Mustache.php');
 
 function usage() {
   print "Usage:\n\n";
-  print " mustache.php [-o outputfile] [-p partialDir] [-t] [-h] inputfile\n\n";
+  print " mustache.php [-o outputfile] [-p partialDir] [-i] [-e] [-t] [-h] [-j json] -- inputfiles...\n\n";
   print "   -o outputfile : store php in this file\n";
   print "   -t            : print token array\n";
   print "   -h            : this information\n";
+  print "   -i            : include partials during compilation\n";
+  print "   -p path       : set template path\n";
+  print "   -e            : evaluate templates\n";
+  print "   -j json       : parse json file and pass as context to evaluation\n";
 }
 
 
@@ -49,7 +53,7 @@ if (defined('STDIN')) {
     }
   }
   
-  $res = $o->getopt($argv, 'o:th');
+  $res = $o->getopt($argv, 'o:thip:ej:');
   $opts = array();
   foreach ($res[0] as $foo) {
     $opts[$foo[0]] = ($foo[1] === null ? true : $foo[1]);
@@ -59,21 +63,40 @@ if (defined('STDIN')) {
     usage();
     die();
   }
-  
+
+  $context = array();
+
+  if (_getopt($opts, "j")) {
+    $context = json_decode(file_get_contents(_getopt($opts, "j")));
+  }
+
   $files = $res[1];
-  $m = new Mustache(array("enableCache" => false));
+  $options = array("enableCache" => false);
+  $compilerOptions = array();
+  if (_getopt($opts, "i")) {
+    $compilerOptions["includePartialCode"] = true;
+  }
+  if (_getopt($opts, "p")) {
+    $options["templatePath"] = _getopt($opts, "p");
+  }
+  $options["compilerOptions"] = $compilerOptions;
+  $m = new Mustache($options);
 
   $code = "";
   foreach ($files as $file) {
     $tpl = file_get_contents($file);
-    if (_getopt($opts, "t")) {
+
+    if (_getopt($opts, "e")) {
+      var_dump($m->render($tpl, $context));
+    } else if (_getopt($opts, "t")) {
       $code .= "Tokens for $file:\n".print_r($m->getTokens($tpl), true)."\n";;
     } else {
-      $code .= $m->compile($tpl, null, filenameToFunctionName($file))."\n";
+      $code .= $m->compile($tpl, null, array("type" => "function",
+                                             "name" => filenameToFunctionName($file)))."\n";
     }
   }
 
-  if (!_getopt($opts, 't')) {
+  if (!_getopt($opts, 't') && !_getopt($opts, "e")) {
     $code = "<?php $code ?>";
     if (_getopt($opts, 'o') !== null) {
       file_put_contents($opts['o'], $code);
