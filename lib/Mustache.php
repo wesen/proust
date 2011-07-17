@@ -15,96 +15,46 @@ require_once(dirname(__FILE__).'/helpers.php');
 class Mustache implements \ArrayAccess {
   public $raiseOnContextMiss = false;
 
-  protected $templateName = null;
-  protected $templatePath = ".";
-  protected $templateExtension = "mustache";
-  protected $templateFile = null;
+  public $templatePath = ".";
+  public $templateExtension = "mustache";
 
-  protected $context = null;
-  protected $template = null;
+  public $context = null;
 
   public $partials = array();
 
   public function __construct($options = array()) {
-    $this->templateName = null;
-    $this->templatePath = ".";
-    $this->templateExtension = "mustache";
-    $this->raiseOnContextMiss = false;
-
-    $this->templateFile = null;
-    $this->context = null;
-    $this->template = null;
-
-    objectSetOptions($this, $options);
+    $options = array_merge(array("templatePath" => ".",
+                                 "templateExtension" => "mustache",
+                                 "cacheDir" => "./.mustache.cache/",
+                                 "raiseOnContextMiss" => false,
+                                 "context" => null),
+                           $options);
+    object_set_options($this, $options, array("templatePath",
+                                              "templateExtension",
+                                              "cacheDir",
+                                              "raiseOnContextMiss",
+                                              "context"));
   }
 
+  /***************************************************************************
+   *
+   * caching methods
+   *
+   ***************************************************************************/
+
+  public function ensureCacheDirectoryExists() {
+    if (!is_dir($this->cacheDir)) {
+      if (!mkdir($this->cacheDir, 0777, true)) {
+        throw new Exception("could not create cache directory ".$this->cacheDir);
+      }
+    }
+  }
+    
   /***************************************************************************
    *
    * Getters and Setters
    *
    ***************************************************************************/
-
-  /** template path **/
-  public function getTemplatePath() {
-    return $this->templatePath;
-  }
-
-  public function setTemplatePath($path) {
-    $this->templatePath = $path;
-    $this->template = null;
-  }
-
-  /** template path **/
-  public function getTemplateExtension() {
-    return $this->templateExtension;
-  }
-
-  public function setTemplateExtension($extension) {
-    $this->templateExtension = $extension;
-    $this->template = null;
-  }
-  
-  /** template name **/
-  public function getTemplateName() {
-    if ($this->templateName == null) {
-      $this->templateName = Mustache::underscore(get_class_name($this));
-    }
-    return $this->templateName;
-  }
-
-  public function setTemplateName($name) {
-    $this->templateName = $name;
-    $this->template = null;
-  }
-
-  /** template file **/
-  public function getTemplateFile() {
-    if ($this->templateFile == null) {
-      $this->templateFile = $this->getTemplatePath()."/".$this->getTemplateName().".".$this->getTemplateExtension();
-    }
-    return $this->templateFile;
-  }
-
-  public function setTemplateFile($file) {
-    $this->templateFile = $file;
-    $this->template = null;
-  }
-
-  /** template itself **/
-  public function getTemplate() {
-    if ($this->template == null) {
-      $this->template = new Mustache\Template(file_get_contents($this->getTemplateFile()));
-    }
-    return $this->template;
-  }
-
-  public function setTemplate($template) {
-    if (is_string($template)) {
-      $this->template = new Mustache\Template($template);
-    } else {
-      $this->template = $template;
-    }
-  }
 
   /** context **/
   public function getContext() {
@@ -121,15 +71,11 @@ class Mustache implements \ArrayAccess {
    ***************************************************************************/
 
   public function render($data = null, $context = null) {
-    if ($data === null) {
-      $data = $this->getTemplate();
+    if (is_string($data)) {
+      $data = new Mustache\Template($data);
     } else {
-      if (is_string($data)) {
-        $data = new Mustache\Template($data);
-      } else {
-        // when not a string, return directly, don't try to parse
-        return $data;
-      }
+      // when not a string, return directly, don't try to parse
+      return $data;
     }
 
     if ($context == null) {
@@ -150,7 +96,8 @@ class Mustache implements \ArrayAccess {
    * render the file as a template.
    **/
   public function renderFile($name, $context = array()) {
-    return $this->render($this->partial($name), $context);
+    $data = $this->partial($name);
+    return $this->render($data, $context);
   }
 
   /**
@@ -175,50 +122,9 @@ class Mustache implements \ArrayAccess {
     if (array_key_exists($name, $this->partials)) {
       return $this->partials[$name];
     } else {
-      return static::__partial($this->getTemplatePath()."/".$name.".".$this->getTemplateExtension());
+      return static::__partial($this->templatePath."/".$name.".".$this->templateExtension);
     }
   }
-
-  /** Memoization array for camelcasing. **/
-  protected static $__camelizeHash = array();
-
-  /**
-   * camelcases a name to get a class name.
-   **/
-  public static function classify($name) {
-    if (array_key_exists($name, self::$__camelizeHash)) {
-      return self::$__camelizeHash[$name];
-    }
-
-    $orig = $name;
-    
-    $name = str_replace(array('-', '_'), ' ', $name); 
-    $name = ucwords($name); 
-    $name = ucfirst(str_replace(' ', '', $name));
-    
-    self::$__camelizeHash[$orig] = $name;
-    
-    return $name; 
-  }
-
-  protected static $__uncamelizeHash = array();
-
-  /**
-   * Uncamelizes a string.
-   **/
-  public static function underscore($name) {
-    if (array_key_exists($name, self::$__uncamelizeHash)) {
-      return self::$__uncamelizeHash[$name];
-    }
-
-    $orig = $name;
-
-    $name = lcfirst($name);
-    $name = preg_replace("/([A-Z])/e", '"_".lcfirst("$1")', $name);
-    self::$__uncamelizeHash[$orig] = $name;
-    return $name;
-  }
-
 
   /***************************************************************************
    *
