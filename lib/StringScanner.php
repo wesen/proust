@@ -103,9 +103,7 @@ class StringScanner implements \ArrayAccess {
     
     $string = $this->rest();
     $re = "/^$re/";
-    debug_log("regexp: '".print_r($re, true)."' against string '".print_r($string, true)."'", 'SCANNER');
     $res = preg_match($re, $string, $this->matches, PREG_OFFSET_CAPTURE);
-    debug_log("result $res matches ".print_r($this->matches, true), 'SCANNER');
     if ($res == 0) {
       $this->match_length = null;
       return null;
@@ -199,9 +197,7 @@ class StringScanner implements \ArrayAccess {
     
     $string = $this->rest();
     $re = "/$re/";
-    debug_log("searching regexp: '".print_r($re, true)."' against string '".print_r($string, true)."'", 'SCANNER');
     $res = preg_match($re, $string, $this->matches, PREG_OFFSET_CAPTURE);
-    debug_log("result: $res, matches ".print_r($this->matches, true)."\n", 'SCANNER');
     if ($res) {
       $start_pos = $this->matches[0][1];
       $this->match_length = strlen($this[0]);
