@@ -71,6 +71,10 @@ class TestGenerator extends UnitTestCase {
     $ctx->pop();
   }
 
+  function testSectionLambda() {
+    
+  }
+
   function testInvertedSection() {
     $ctx = $this->c;
     $res = $this->g->compile(array(":mustache", ":inverted_section", "foo", array(":static", "bla")));

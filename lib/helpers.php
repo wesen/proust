@@ -12,6 +12,7 @@ $DEBUG = array();
 // array_push($DEBUG, 'NOTICE');
 // array_push($DEBUG, 'COMPILER');
 // array_push($DEBUG, 'EVALUATION');
+//array_push($DEBUG, 'CONTEXT');
 
 function var_dump_str($obj) {
   ob_start();
