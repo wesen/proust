@@ -14,6 +14,23 @@ $DEBUG = array();
 // array_push($DEBUG, 'EVALUATION');
 //array_push($DEBUG, 'CONTEXT');
 
+function array_clean($array, $allowed_keys) {
+  foreach ($array as $k => $v) {
+    if (!in_array($k, $allowed_keys)) {
+      unset($array[$key]);
+    }
+  }
+  return $array;
+}
+
+function object_set_options($obj, $options, $allowed_keys = array()) {
+  $options = array_clean($options, $allowed_keys);
+  
+  foreach ($options as $k => $v) {
+    $obj->$k = $v;
+  }
+}
+
 function var_dump_str($obj) {
   ob_start();
   var_dump($obj);
@@ -27,12 +44,6 @@ function get_class_name($object = null) {
     
   $class = explode('\\', (is_string($object) ? $object : get_class($object)));
   return $class[count($class) - 1];
-}
-
-function objectSetOptions($obj, $options) {
-  foreach ($options as $k => $v) {
-    $obj->$k = $v;
-  }
 }
 
 function debug_log($str, $level = "NOTICE") {
