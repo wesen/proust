@@ -180,12 +180,18 @@ class Mustache implements \ArrayAccess {
    * Given a file name and an optional context, attemps to load and
    * render the file as a template.
    **/
-  public function renderFile($name, $context = null) {
+  public function renderTemplate($name, $context = null) {
     $filename = $this->templatePath."/".$name.".".$this->templateExtension;
     $f = $this->getCachedFile($filename, $context);
     return $this->evalTemplate($f, $context);
   }
 
+  public function renderFile($filename, $context = null) {
+    $f = $this->getCachedFile($filename, $context);
+    return $this->evalTemplate($f, $context);
+  }
+
+  
   /**
    * Override this in your subclass if you want to do fun things like
    * reading templates from a database.
@@ -194,7 +200,20 @@ class Mustache implements \ArrayAccess {
     if (array_key_exists($name, $this->partials)) {
       return $this->render($this->partials[$name], $context);
     } else {
-      return $this->renderFile($name, $context);
+      return $this->renderTemplate($name, $context);
+    }
+  }
+
+  public function getPartial($name) {
+    if (array_key_exists($name, $this->partials)) {
+      return $this->partials;
+    } else {
+      $filename = $this->templatePath."/".$name.".".$this->templateExtension;
+      if (file_exists($filename)) {
+        return file_get_contents($filename);
+      } else {
+        return "";
+      }
     }
   }
 
@@ -218,18 +237,17 @@ class Mustache implements \ArrayAccess {
     return $tokens;
   }
   
-  public function compile($code, $context = null, $name = null) {
+  public function compile($code, $context = null, $options = array()) {
     $compilerOptions = $this->compilerOptions;
-    $compilerOptions["context"] = $context;
+    $compilerOptions["mustache"] = $this;
+
+    $options = array_merge(array("type" => "variable",
+                                 "name" => "f"),
+                           $options);
     
-    if ($name !== null) {
-      $compilerOptions["compileToFunction"] = "$name";
-    } else {
-      $compilerOptions["compileToVar"] = "f";
-    }
     
     $generator = new Mustache\Generator($compilerOptions);
-    $compiledCode = $generator->compileCode($code);
+    $compiledCode = $generator->compileCode($code, $options);
 
     return $compiledCode;
   }
