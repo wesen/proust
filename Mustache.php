@@ -19,11 +19,13 @@ function usage() {
   print "   -o outputfile : store php in this file\n";
   print "   -t            : print token array\n";
   print "   -h            : this information\n";
-  print "   -i            : include partials during compilation\n";
   print "   -p path       : set template path\n";
   print "   -e            : evaluate templates\n";
   print "   -j json       : parse json file and pass as context to evaluation\n";
   print "   -c name       : compile to class name\n";
+  print "   --disable-lambdas : disable lambdas for compilation\n";
+  print "   --disable-indentation : disable indentation for compilation\n";
+  print "   --include-partials : include partials directly as code\n";
 }
 
 
@@ -41,7 +43,7 @@ if (defined('STDIN')) {
   
   function filenameToFunctionName($filename){
     $name = basename($filename);
-    $name = preg_replace('/\.[^\.]*$/', '', $name);
+    $name = preg_replace('/\.[^\.]*$/', '_', $name);
     $name = preg_replace('/[^a-zA-Z0-9]/', '_', $name);
     return $name;
   }
@@ -54,7 +56,7 @@ if (defined('STDIN')) {
     }
   }
   
-  $res = $o->getopt($argv, 'o:thip:ej:c:');
+  $res = $o->getopt($argv, 'o:thp:ej:c:', array("disable-lambdas", "disable-indentation", "include-partials"));
   $opts = array();
   foreach ($res[0] as $foo) {
     $opts[$foo[0]] = ($foo[1] === null ? true : $foo[1]);
@@ -74,8 +76,14 @@ if (defined('STDIN')) {
   $files = $res[1];
   $options = array("enableCache" => false);
   $compilerOptions = array();
-  if (_getopt($opts, "i")) {
+  if (_getopt($opts, "--include-partials")) {
     $compilerOptions["includePartialCode"] = true;
+  }
+  if (_getopt($opts, "--disable-lambdas")) {
+    $compilerOptions["disableLambdas"] = true;
+  }
+  if (_getopt($opts, "--disable-indentation")) {
+    $compilerOptions["disableIndentation"] = true;
   }
   if (_getopt($opts, "p")) {
     $options["templatePath"] = _getopt($opts, "p");
