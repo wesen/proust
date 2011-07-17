@@ -18,8 +18,7 @@ X add option to directly include partials into code of calling template
 X implement different compiler options (enable/disable lambdas for example)
 X add documentation
 X remove debug code
+X compile to class
 
-- compile to class
 - write README with examples
-
 - speed up context lookup -> literature ?!??
