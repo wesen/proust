@@ -58,7 +58,8 @@ class Mustache implements \ArrayAccess {
       }
     }
   }
-  
+
+  /* Store ctag, otag and compiler options as part of the cache name */
   public function getTagString($context) {
     if (!is_a($context, "Mustache\Context")) {
       $context = $this->getContext();
@@ -69,13 +70,15 @@ class Mustache implements \ArrayAccess {
     }
     return $res;
   }
-  
+
+  /* get the filename of the actual file. */
   public function getCacheFilename($filename) {
     $cachefile = preg_replace('/[\/\\\ \.]/', '_', $filename);
     $cachefile = $this->cacheDir."/$cachefile.mustache_cache";
     return $cachefile;
   }
 
+  /* cache a code string, along with context information. Returns the evaluated function.. */
   public function getCachedCode($code, $context) {
     if (!$this->enableCache) {
       $php = $this->compile($code, $context);
@@ -104,12 +107,14 @@ class Mustache implements \ArrayAccess {
     return $f;
   }
 
+  /* Get the cache string for a file. */
   public function getFileCodeCacheKey($filename, $context) {
     $mtime = filemtime($filename);
     $size = filesize($filename);
     return "file $filename $mtime $size ".$this->getTagString($context);
   }
 
+  /* cache a file, along with context information. Returns the evaluated function. */
   function getCachedFile($filename, $context) {
     if (!$this->enableCache) {
       $code = file_get_contents($filename);
@@ -137,6 +142,7 @@ class Mustache implements \ArrayAccess {
     return $f;
   }
 
+  /* clears the complete cache */
   function clearCache() {
     foreach (glob($this->cacheDir."/*.mustache_cache") as $file) {
       unlink($file);
@@ -156,7 +162,6 @@ class Mustache implements \ArrayAccess {
     } 
     return $this->context;
   }
-
 
   public function resetContext() {
     $this->context = null;
@@ -213,6 +218,7 @@ class Mustache implements \ArrayAccess {
     }
   }
 
+  /* get the content of a partial. */
   public function getPartial($name) {
     if (array_key_exists($name, $this->partials)) {
       return $this->partials[$name];
@@ -226,6 +232,7 @@ class Mustache implements \ArrayAccess {
     }
   }
 
+  /* evaluates a compiled template, along with the given context. */
   public function evalTemplate($f, $context = null) {
     if ($context == null) {
       return $f($this->getContext());
@@ -240,12 +247,14 @@ class Mustache implements \ArrayAccess {
     }
   }
 
+  /* Get the tokenized version of $code. */
   public function getTokens($code, $context = null) {
     $parser = new Mustache\Parser();
     $tokens = $parser->parse($code, $context);
     return $tokens;
   }
-  
+
+  /* Compile the code, passing the options to the compiler. */
   public function compile($code, $context = null, $options = array()) {
     $compilerOptions = $this->compilerOptions;
     $compilerOptions["mustache"] = $this;
