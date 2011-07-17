@@ -125,6 +125,14 @@ class TestSpec extends UnitTestCase {
       $this->runTestWithMustache($m, $test, "DISABLED LAMBDAS");
     }
 
+    if (!preg_match("/partials/", $test["method_name"])) {
+      $m = new Mustache(array("enableCache" => false,
+                              "compilerOptions" => array("disableIndentation" => true)));
+      $this->runTestWithMustache($m, $test, "DISABLED INDENTATION");
+    }
+      
+    
+    /* test caching */
     $m = new Mustache(array("enableCache" => true,
                             "cacheDir" => dirname(__FILE__)."/spec.cache"));
 

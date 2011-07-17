@@ -17,10 +17,19 @@ class Generator {
   public function __construct(array $options = array()) {
     $defaults = array("includePartialCode" => false,
                       "disableLambdas" => false,
+                      "disableIndentation" => false,
                       "mustache" => null);
 
     $options = array_merge($defaults, $options);
     object_set_options($this, $options, array_keys($defaults));
+
+    if ($this->disableIndentation) {
+      $this->outputFunction = 'echo';
+      $this->newlineFunction = 'echo("\n")';
+    } else {
+      $this->outputFunction = "\$ctx->output";
+      $this->newlineFunction = "\$ctx->newline()";
+    }
   }
 
   public function getTokens($code) {
@@ -111,7 +120,7 @@ class Generator {
       break;
 
     case ":static":
-      return "\$ctx->output('".self::escape($tokens[1])."');";
+      return $this->outputFunction."('".self::escape($tokens[1])."');";
       break;
 
     case ":mustache":
@@ -124,7 +133,7 @@ class Generator {
       break;
 
     case ":newline":
-      return "\$ctx->newline();";
+      return $this->newlineFunction.";\n";
       break;
 
     default:
@@ -169,7 +178,7 @@ $iterationSection
 \$v = \$ctx['$name'];
 if (is_callable(\$v)) {
   Mustache\\Context::PushContext(\$ctx);
-  \$ctx->output(\$ctx->render(\$v(substr(end(\$src), $start, $len))));
+  ".$this->outputFunction."(\$ctx->render(\$v(substr(end(\$src), $start, $len))));
   Mustache\\Context::PopContext(\$ctx);
 } else {
   $iterationSection
@@ -187,13 +196,13 @@ if (is_callable(\$v)) {
 
   public function on_partial($name, $indentation) {
     if (!$this->includePartialCode) {
-      return "\$ctx->output(\$ctx->partial('$name', '$indentation'));";
+      return $this->outputFunction."(\$ctx->partial('$name', '$indentation'));";
     } else {
       $m = $this->mustache;
       $ctx = $m->getContext();
       if ($ctx->isPartialRecursion($name)) {
         /* revert to normal partial call. */
-       return "\$ctx->output(\$ctx->partial('$name', '$indentation'));";
+       return $this->outputFunction."(\$ctx->partial('$name', '$indentation'));";
       }
       
       $ctx->pushPartial($name, $indentation);
@@ -211,17 +220,17 @@ if (is_callable(\$v)) {
 
   public function on_utag($name) {
     if ($this->disableLambdas) {
-      return "\$ctx->output(\$ctx->fetch('$name', false, null));";
+      return $this->outputFunction."(\$ctx->fetch('$name', false, null));";
     } else {
-      return "\$ctx->output(\$ctx->fetch('$name', true, null));";
+      return $this->outputFunction."(\$ctx->fetch('$name', true, null));";
     }
   }
 
   public function on_etag($name) {
     if ($this->disableLambdas) {
-      return "\$ctx->output(htmlspecialchars(\$ctx->fetch('$name', false, null)));";
+      return $this->outputFunction."(htmlspecialchars(\$ctx->fetch('$name', false, null)));";
     } else {
-      return "\$ctx->output(htmlspecialchars(\$ctx->fetch('$name', true, null)));";
+      return $this->outputFunction."(htmlspecialchars(\$ctx->fetch('$name', true, null)));";
     }
   }
 
