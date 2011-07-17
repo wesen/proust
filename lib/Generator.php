@@ -15,79 +15,27 @@
 
 namespace Mustache;
 
+class Template {
+  public function __construct($context = null) {
+    if ($context === null) {
+      $this->context = new Context();
+    } else {
+      $this->context = $context;
+    }
+  }
+};
+
 class Generator {
   public $mustache = null;
   public $includePartialCode = false;
   public $disableLambdas = false;
   public $disableObject = false;
-  
-  public function __construct(array $options = array()) {
-    $defaults = array("includePartialCode" => false,
-                      "disableLambdas" => false,
-                      "disableIndentation" => false,
-                      "mustache" => null);
 
-    $options = array_merge($defaults, $options);
-    object_set_options($this, $options, array_keys($defaults));
-
-    if ($this->disableIndentation) {
-      $this->outputFunction = 'echo';
-      $this->newlineFunction = 'echo("\n")';
-    } else {
-      $this->outputFunction = "\$ctx->output";
-      $this->newlineFunction = "\$ctx->newline()";
-    }
-  }
-
-  /** Parse $code into a token array. **/
-  public function getTokens($code) {
-    $parser = new Parser();
-    $tokens = $parser->parse($code, $this->mustache->getContext());
-    return $tokens;
-  }
-
-  /* Compile the code with the given options */
-  public function compileCode($code, $options = array()) {
-    $tokens = $this->getTokens($code);
-    if ($tokens === array(":multi")) {
-      return "";
-    }
-    return $this->compile($tokens, $code, $options);
-  }
-
-  /**
-   * Compile the tokens with the given options. Original source should
-   * be passed as $code for lambda sections to get the raw input.
-   **/
-  public function compile($tokens, $code = "", $options = array()) {
-    $defaults = array("type" => "captured",
-                      "name" => "f");
-    $options = array_merge($defaults, $options);
-    
-    $compiledCode = "if (!isset(\$src)) { \$src = array(); }; ".
-      "array_push(\$src, \n/* template source */\n'".self::escape($code)."'\n);\n".
-      $this->compile_sub($tokens)."\narray_pop(\$src);\n";
-    $compiledCodeCapture = "ob_start();\n".$compiledCode."\nreturn ob_get_clean();\n";
-
-    switch ($options["type"]) {
-    case "variable":
-      return "\$".$options["name"]." = function (\$ctx) { $compiledCodeCapture };";
-      
-    case "function":
-      return "function ".$options["name"]." (\$ctx) { $compiledCodeCapture };";
-      
-    case "method":
-      return "function ".$options["method"]." () { \$ctx = \$this->context; $compiledCodeCapture };";
-
-    case "captured":
-      return $compiledCodeCapture;
-
-    case "raw":
-    default:
-      return $compiledCode;
-    }
-  }
-
+  /***************************************************************************
+   *
+   * Helper functions
+   *
+   ***************************************************************************/
   public static function escape($str) {
     return str_replace(array("\\", "'"),
                        array("\\\\", "\\'"),
@@ -107,6 +55,104 @@ class Generator {
     return false;
   }
   
+  public function __construct(array $options = array()) {
+    $defaults = array("includePartialCode" => false,
+                      "disableLambdas" => false,
+                      "disableIndentation" => false,
+                      "compileClass" => false,
+                      "outputFunction" => "\$ctx->output",
+                      "newlineFunction" => "\$ctx->newline()",
+                      "mustache" => null);
+
+    $options = array_merge($defaults, $options);
+    object_set_options($this, $options, array_keys($defaults));
+
+    if ($this->disableIndentation) {
+      $this->outputFunction = 'echo';
+      $this->newlineFunction = 'echo("\n")';
+    }
+  }
+
+  /** Parse $code into a token array. **/
+  public function getTokens($code) {
+    $parser = new Parser();
+    $tokens = $parser->parse($code, $this->mustache->getContext());
+    return $tokens;
+  }
+
+  /* Compile the code with the given options */
+  public function compileCode($code, $options = array()) {
+    $tokens = $this->getTokens($code);
+    if ($tokens === array(":multi")) {
+      return "";
+    }
+    return $this->compile($tokens, $code, $options);
+  }
+
+  public function compileClass($className, $codes) {
+    $this->compileClass = true;
+    $this->compiledMethods = array();
+    $this->methodsToCompile = $codes;
+    
+    $res = "class $className extends Mustache\Template {\n";
+    while (count($this->methodsToCompile) > 0) {
+      $method = array_pop($this->methodsToCompile);
+      $name = $method[0];
+      $code = $method[1];
+
+      if (in_array($name, $this->compiledMethods)) {
+        continue;
+      }
+
+      $res .= "/* method for $name */\n";
+      array_push($this->compiledMethods, $name);
+      $res .= $this->compileCode($code, array("type" => "method",
+                                              "name" => "$name"));
+      $res .= "\n";
+    }
+
+    $res .= "};\n";
+
+    return $res;
+  }
+
+  /**
+   * Compile the tokens with the given options. Original source should
+   * be passed as $code for lambda sections to get the raw input.
+   **/
+  public function compile($tokens, $code = "", $options = array()) {
+    $defaults = array("type" => "captured",
+                      "name" => "f");
+    $options = array_merge($defaults, $options);
+    
+    $compiledCode = "if (!isset(\$src)) { \$src = array(); }; ".
+      "array_push(\$src, \n/* template source */\n'".self::escape($code)."'\n);\n".
+      $this->compile_sub($tokens)."array_pop(\$src);\n";
+    $compiledCodeCapture = "ob_start();\n".$compiledCode."return ob_get_clean();\n";
+
+    switch ($options["type"]) {
+    case "variable":
+      return "\$".$options["name"]." = function (\$ctx) { $compiledCodeCapture };";
+      
+    case "function":
+      return "function ".$options["name"]." (\$ctx) { $compiledCodeCapture };";
+      
+    case "method":
+      return "function ".$options["name"]." (\$data = null) {\n".
+        "  \$ctx = \$this->context;\n".
+        "  if (\$data) { \$ctx->reset(\$data); }\n".
+        "  $compiledCodeCapture\n".
+        "}\n";
+
+    case "captured":
+      return $compiledCodeCapture;
+
+    case "raw":
+    default:
+      return $compiledCode;
+    }
+  }
+
   /**
    * Given an array of tokens, convert them into php code. In
    * particular, there are three types of expression we are concerned
@@ -208,14 +254,34 @@ if (is_callable(\$v)) {
   }
 
   public function on_partial($name, $indentation) {
+    if ($this->compileClass) {
+      $str = "\$ctx->pushPartial('$name', '$indentation');\n".
+        $this->outputFunction."(\$this->".self::functionName($name)."());\n".
+        "\$ctx->popPartial('$name');\n".
+        "/* end partial include $name */\n";
+    } else {
+      $str = $this->outputFunction."(\$ctx->partial('$name', '$indentation'));\n";
+    }
+
     if (!$this->includePartialCode) {
-      return $this->outputFunction."(\$ctx->partial('$name', '$indentation'));";
+        if ($this->compileClass) {
+          /* add partial to be compiled */
+          $m = $this->mustache;
+          $code = $m->getPartial($name);
+          array_push($this->methodsToCompile, array($name, $code));
+        }
+      return $str;
     } else {
       $m = $this->mustache;
       $ctx = $m->getContext();
       if ($ctx->isPartialRecursion($name)) {
+        if ($this->compileClass) {
+          /* add partial to be compiled */
+          $code = $m->getPartial($name);
+          array_push($this->methodsToCompile, array($name, $code));
+        }
         /* revert to normal partial call. */
-       return $this->outputFunction."(\$ctx->partial('$name', '$indentation'));";
+        return $str;
       }
       
       $ctx->pushPartial($name, $indentation);
