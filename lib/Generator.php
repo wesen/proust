@@ -97,7 +97,9 @@ if (\$v || (\$v === 0)) {
       \$ctx->pop();
     }
   } else if (is_callable(\$v)) {
+    Mustache\\Context::PushContext(\$ctx);
     \$ctx->output(\$ctx->render(\$v(substr(\$src, $start, $len))));
+    Mustache\\Context::PopContext(\$ctx);
   } else if (\$v) {
     \$f();
   }
