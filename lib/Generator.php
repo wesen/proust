@@ -180,7 +180,11 @@ return $res;
       $code = $m->getPartial($name);
       $res = $this->compileCode($code, array("type" => "raw"));
       $ctx->popPartial($name);
-      return "/* partial included code $name */\n".$res."\n/* end partial include $name */\n";
+      return "/* partial included code $name */\n".
+        "\$ctx->pushPartial('$name', '$indentation');\n".
+        $res."\n".
+        "\$ctx->popPartial('$name');\n".
+        "/* end partial include $name */\n";
     }
   }
 
