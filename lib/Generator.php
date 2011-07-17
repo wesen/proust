@@ -112,9 +112,16 @@ class Generator {
     $functionName = "__section_".self::functionName($name);
     $len = $end - $start;
     $res = <<<EOD
-\$$functionName = function () use (\$ctx) { $code };
+
+/* section $name */
 \$v = \$ctx['$name'];
-if (\$v || (\$v === 0)) {
+if (is_callable(\$v)) {
+  Mustache\\Context::PushContext(\$ctx);
+  \$ctx->output(\$ctx->render(\$v(substr(\$src, $start, $len))));
+  Mustache\\Context::PopContext(\$ctx);
+} else {
+  \$$functionName = function () use (\$ctx) { $code };
+
   if (is_array(\$v) || \$v instanceof \\Traversable) {
     if (Mustache\Generator::isAssoc(\$v)) {
       \$v = array(\$v);
@@ -124,10 +131,6 @@ if (\$v || (\$v === 0)) {
       \$$functionName();
       \$ctx->pop();
     }
-  } else if (is_callable(\$v)) {
-    Mustache\\Context::PushContext(\$ctx);
-    \$ctx->output(\$ctx->render(\$v(substr(\$src, $start, $len))));
-    Mustache\\Context::PopContext(\$ctx);
   } else if (\$v) {
     \$$functionName();
   }
