@@ -89,31 +89,38 @@ class Context implements \ArrayAccess {
     echo "\n";
   }
 
-  public function partial($name, $indentation) {
+  public function pushPartial($name, $indentation) {
     if (count($this->partialStack) > 30) {
       /* max recursion reached, returning warning string. */
       return "Mustache: max recursion level reached\n";
     }
     
-    array_push($this->partialStack, $name);
-    $prevIndentation = $this->indentation;
+    array_push($this->partialStack, array("name" => $name,
+                                          "indentation" => $this->indentation,
+                                          "otag" => $this->otag,
+                                          "ctag" => $this->ctag));
     $this->indentation .= $indentation;
-
-    /* TODO check for already compiled partial with current ctag / otag */
-    
-    // temporarily reset to default delimiters for immediate lambda return
-    $ctag = $this->ctag;
-    $otag = $this->otag;
     $this->ctag = $this->otag = null;
+  }
 
+  public function popPartial($name) {
+    $partial = array_pop($this->partialStack);
+    if ($partial["name"] != $name) {
+      throw new Exception("Wrong partial stack ordering, ".$partial["name"]," should be $name");
+    }
+    $this->indentation = $partial["indentation"];
+    $this->ctag = $partial["ctag"];
+    $this->otag = $partial["otag"];
+  }
+
+  public function partial($name, $indentation) {
+    $this->pushPartial($name, $indentation);
+
+    // temporarily reset to default delimiters for immediate lambda return
     $m = $this->getMustacheInStack();
     $res = $m->renderPartial($name, $this);
 
-    $this->ctag = $ctag;
-    $this->otag = $otag;
-
-    array_pop($this->partialStack);
-    $this->indentation = $prevIndentation;
+    $this->popPartial($name);
     
     return $res;
   }
