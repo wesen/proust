@@ -29,7 +29,84 @@ class Template {
   }
 };
 
-class Generator {
+class TokenWalker {
+  public static $defaults = array("errorOnUnhandled" => false);
+  
+  public function __construct(array $options = array()) {
+    $options = array_merge(static::$defaults, $options);
+    object_set_options($this, $options, array_keys(static::$defaults));
+  }
+
+  public function dispatch($type, $args) {
+    $method = "on_$type";
+    if (method_exists($this, $method)) {
+      return call_user_func_array(array($this, $method), $args);
+    } else {
+      if ($this->errorOnUnhandled) {
+        throw new \Exception("Unhandled mustache expression ".$type);
+      }
+    }
+  }
+
+  /**
+   * Given an array of tokens, convert them into php code. In
+   * particular, there are three types of expression we are concerned
+   * with:
+   *
+   *  :multi -> mixed bag of :static, :mustache and whatever
+   *
+   *  :static -> normal HTML, the stuff outside of {{mustaches}}.
+   *
+   *  :mustache -> any mustache tag, from sections to partials
+   **/
+  public function walk($tokens) {
+    switch ($tokens[0]) {
+    case ":multi":
+      return $this->dispatch("multi", array(array_slice($tokens, 1)));
+
+    case ":static":
+      return $this->dispatch("static", array($tokens[1]));
+
+    case ":mustache":
+      return $this->dispatch(substr($tokens[1], 1), array_slice($tokens, 2));
+
+    case ":newline":
+      return $this->dispatch("newline", array());
+
+    default:
+      if ($this->errorOnUnhandled) {
+        throw new \Exception("Unhandled expression ".$tokens[0]);
+      }
+      break;
+    }
+
+    return "";
+  }
+
+  public function on_multi($tokens) {
+    foreach ($tokens as $token) {
+      $this->walk($token);
+    }
+  }
+
+  public function on_section($name, $content, $start, $end) {
+    $this->walk($content);
+  }
+
+  public function on_inverted_section($name, $content) {
+    $this->walk($content);
+  }
+  
+};
+
+class Generator extends TokenWalker {
+  public static $defaults = array("includePartialCode" => false,
+                      "disableLambdas" => false,
+                      "disableIndentation" => false,
+                      "compileClass" => false,
+                      "outputFunction" => "\$ctx->output",
+                      "newlineFunction" => "\$ctx->newline()",
+                      "mustache" => null);
   public $mustache = null;
   public $includePartialCode = false;
   public $disableLambdas = false;
@@ -60,16 +137,7 @@ class Generator {
   }
   
   public function __construct(array $options = array()) {
-    $defaults = array("includePartialCode" => false,
-                      "disableLambdas" => false,
-                      "disableIndentation" => false,
-                      "compileClass" => false,
-                      "outputFunction" => "\$ctx->output",
-                      "newlineFunction" => "\$ctx->newline()",
-                      "mustache" => null);
-
-    $options = array_merge($defaults, $options);
-    object_set_options($this, $options, array_keys($defaults));
+    parent::__construct($options);
 
     if ($this->disableIndentation) {
       $this->outputFunction = 'echo';
@@ -130,11 +198,11 @@ class Generator {
     $options = array_merge($defaults, $options);
 
     if ($this->disableLambdas) {
-      $compiledCode = $this->compile_sub($tokens);
+      $compiledCode = $this->walk($tokens);
     } else {
       $compiledCode = "if (!isset(\$src)) { \$src = array(); }; ".
         "array_push(\$src, \n/* template source */\n'".self::escape($code)."'\n);\n".
-        $this->compile_sub($tokens)."array_pop(\$src);\n";
+        $this->walk($tokens)."array_pop(\$src);\n";
     }
     $compiledCodeCapture = "ob_start();\n".$compiledCode."return ob_get_clean();\n";
 
@@ -160,57 +228,27 @@ class Generator {
     }
   }
 
-  /**
-   * Given an array of tokens, convert them into php code. In
-   * particular, there are three types of expression we are concerned
-   * with:
-   *
-   *  :multi -> mixed bag of :static, :mustache and whatever
-   *
-   *  :static -> normal HTML, the stuff outside of {{mustaches}}.
-   *
-   *  :mustache -> any mustache tag, from sections to partials
-   **/
-  public function compile_sub($tokens) {
-    switch ($tokens[0]) {
-    case ":multi":
-      {
-        // hack closures
-        $foo = $this;
-        $arr = array_map(function ($token) use ($foo) {
-            return $foo->compile_sub($token);
-          },
-          array_slice($tokens, 1));
-        return join("\n", $arr);
-      }
-      break;
+  public function on_multi($tokens) {
+    // hack closures
+    $foo = $this;
+    $arr = array_map(function ($token) use ($foo) {
+        return $foo->walk($token);
+      }, $tokens);
+    return join("\n", $arr);
+  }
 
-    case ":static":
-      return $this->outputFunction."('".self::escape($tokens[1])."');";
-      break;
+  public function on_static($text) {
+    return $this->outputFunction."('".self::escape($text)."');";
+  }
+    
 
-    case ":mustache":
-      $method = "on_".substr($tokens[1], 1);
-      if (method_exists($this, $method)) {
-        return call_user_func_array(array($this, $method), array_slice($tokens, 2));
-      } else {
-        throw new \Exception("Unhandled mustache expression ".$tokens[1]);
-      }
-      break;
 
-    case ":newline":
-      return $this->newlineFunction.";\n";
-      break;
-
-    default:
-      throw new \Exception("Unhandled expression ".$tokens[0]);
-      break;
-    }
-    return "";
+  public function on_newline() {
+    return $this->newlineFunction.";\n";
   }
 
   public function on_section($name, $content, $start, $end) {
-    $code = $this->compile_sub($content);
+    $code = $this->walk($content);
     $name = self::escape($name);
     $functionName = "__section_".self::functionName($name);
     $len = $end - $start;
@@ -255,7 +293,7 @@ if (is_callable(\$v)) {
   }
 
   public function on_inverted_section($name, $content) {
-    $code = $this->compile_sub($content);
+    $code = $this->walk($content);
     $name = self::escape($name);
     return "/* inverted section $name */\n\$v = \$ctx['$name']; if (!\$v && (\$v !== 0)) { $code }\n";
   }
