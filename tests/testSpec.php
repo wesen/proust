@@ -118,6 +118,26 @@ class TestSpec extends UnitTestCase {
     
     $this->assertEqual($res, $test["expected"], $msg);
     $this->tearDown();
+
+    /* test with disabled lambdas when test is not for lambdas */
+    if (!preg_match("/lambdas/", $test["method_name"])) {
+      $this->setUp();
+      $m = new Mustache(array("enableCache" => false,
+                              "compilerOptions" => array("includePartialCode" => true,
+                                                         "disableLambdas" => true)));
+      if (array_key_exists("partials", $test)) {
+        $m->partials = $test["partials"];
+      }
+      $res = $m->render($test["template"], $test["data"]);
+      $msg = "DISABLED LAMBDAS Specification error: ".$test["desc"]."\n".
+        "Got :\n------\n*".print_r($res, true)."*\n------\n".
+        "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
+        "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n";
+      $msg = str_replace('%', '%%', $msg);
+      
+      $this->assertEqual($res, $test["expected"], $msg);
+      $this->tearDown();
+    }
   }
 
   public function runSpec($spec) {
