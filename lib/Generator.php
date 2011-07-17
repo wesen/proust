@@ -12,14 +12,29 @@ class Generator {
   public $compileToVar = null;
   public $compileToFunction = null;
   public $compileToMethod = null;
+  public $includePartialCode = false;
+  public $context = null;
   
   public function __construct(array $options = array()) {
     $defaults = array("compileToVar" => null,
                       "compileToFunction" => null,
-                      "compileToMethod" => null);
+                      "compileToMethod" => null,
+                      "includePartialCode" => false,
+                      "context" => null);
 
     $options = array_merge($defaults, $options);
     object_set_options($this, $options, array_keys($defaults));
+  }
+
+  public function getTokens($code) {
+    $parser = new Parser();
+    $tokens = $parser->parse($code, $this->context);
+    return $tokens;
+  }
+  
+  public function compileCode($code) {
+    $tokens = $this->getTokens($code);
+    return $this->compile($tokens, $code);
   }
 
   public function compile($tokens, $code = "") {

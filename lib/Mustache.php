@@ -214,22 +214,14 @@ class Mustache implements \ArrayAccess {
 
   public function getTokens($code, $context = null) {
     $parser = new Mustache\Parser();
-    if (is_a($context, "Mustache\Context")) {
-      /* weird mixture of evaluation context and compilation context, but so it is. */
-      if ($context->otag !== null) {
-        $parser->otag = $context->otag;
-      }
-      if ($context->ctag !== null) {
-        $parser->ctag = $context->ctag;
-      }
-    }
-    $tokens = $parser->compile($code);
-
+    $tokens = $parser->parse($code, $context);
     return $tokens;
   }
   
   public function compile($code, $context = null, $name = null) {
-    $compilerOptions = array_merge($this->compilerOptions, array());
+    $compilerOptions = $this->compilerOptions;
+    $compilerOptions["context"] = $context;
+    
     if ($name !== null) {
       $compilerOptions["compileToFunction"] = "$name";
     } else {
@@ -237,7 +229,7 @@ class Mustache implements \ArrayAccess {
     }
     
     $generator = new Mustache\Generator($compilerOptions);
-    $compiledCode = $generator->compile($this->getTokens($code, $context), $code);
+    $compiledCode = $generator->compileCode($code);
 
     return $compiledCode;
   }
