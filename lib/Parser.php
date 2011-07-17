@@ -43,7 +43,7 @@ class Parser {
   static $SECTION_TYPES = array('#', '^', '/');
 
   /** allowed content in a tag name. **/
-  static $ALLOWED_CONTENT = '(\w|[\?\!\/\_\-])*';
+  static $ALLOWED_CONTENT = '(\w|[\?\!\/\_\-\.])*';
 
   /** These type of tags allow any content, the rest only allow ALLOWED_CONTENT. **/
   static $ANY_CONTENT = array('!', '=');
