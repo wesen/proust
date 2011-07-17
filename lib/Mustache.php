@@ -56,7 +56,7 @@ class Mustache implements \ArrayAccess {
   public function ensureCacheDirectoryExists() {
     if (!is_dir($this->cacheDir)) {
       if (!mkdir($this->cacheDir, 0777, true)) {
-        throw new Exception("could not create cache directory ".$this->cacheDir);
+        throw new \Exception("could not create cache directory ".$this->cacheDir);
       }
     }
   }
@@ -242,7 +242,7 @@ class Mustache implements \ArrayAccess {
       try {
         $this->getContext()->push($context);
         return $f($this->getContext());
-      } catch (Exception $e) {
+      } catch (\Exception $e) {
         $this->getContext()->pop();
         throw $e;
       }
