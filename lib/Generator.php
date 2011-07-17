@@ -128,10 +128,14 @@ class Generator {
     $defaults = array("type" => "captured",
                       "name" => "f");
     $options = array_merge($defaults, $options);
-    
-    $compiledCode = "if (!isset(\$src)) { \$src = array(); }; ".
-      "array_push(\$src, \n/* template source */\n'".self::escape($code)."'\n);\n".
-      $this->compile_sub($tokens)."array_pop(\$src);\n";
+
+    if ($this->disableLambdas) {
+      $compiledCode = $this->compile_sub($tokens);
+    } else {
+      $compiledCode = "if (!isset(\$src)) { \$src = array(); }; ".
+        "array_push(\$src, \n/* template source */\n'".self::escape($code)."'\n);\n".
+        $this->compile_sub($tokens)."array_pop(\$src);\n";
+    }
     $compiledCodeCapture = "ob_start();\n".$compiledCode."return ob_get_clean();\n";
 
     switch ($options["type"]) {
