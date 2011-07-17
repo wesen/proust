@@ -21,8 +21,8 @@ class ContextMissException extends \Exception {
 };
 
 class Context implements \ArrayAccess {
-  protected $stack = null;
-  protected $partialStack = null;
+  public $stack = null;
+  public $partialStack = null;
 
   /* Keep a stack of global contexts for lambdas */
   static $GLOBAL_CONTEXT = array();
