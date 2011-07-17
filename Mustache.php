@@ -31,6 +31,7 @@ function usage() {
 
 if (defined('STDIN')) {
   error_reporting(E_ALL);
+  ini_set('xdebug.max_nesting_level', 10000);
 
   require_once('Console/Getopt.php');
   $o = new Console_Getopt();
