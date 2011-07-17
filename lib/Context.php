@@ -40,14 +40,9 @@ class Context implements \ArrayAccess {
   }
 
   /* actual context implementation */
-  public function __construct($_mustache) {
+  public function __construct($_mustache = null) {
     $this->mustache = $_mustache;
-    $this->stack = array($_mustache);
-    $this->partialStack = array();
-    $this->otag = null;
-    $this->ctag = null;
-    $this->indentation = "";
-    $this->isNewline = true;
+    $this->reset();
   }
 
   /***************************************************************************
@@ -68,11 +63,26 @@ class Context implements \ArrayAccess {
     return $this;
   }
 
+  public function reset($data = null) {
+    if ($data !== null) {
+      $this->stack = array($data);
+    } else {
+      $this->stack = array();
+    }
+    
+    $this->partialStack = array();
+    $this->otag = null;
+    $this->ctag = null;
+    $this->indentation = "";
+    $this->isNewline = true;
+  }
+
   /* fetch a single path component from object $a */
   public function __fetch($a, $name) {
     if (is_a($a, "Mustache\Context")) {
       return $a->fetch($name);
     }
+
     
     if (($a instanceof \ArrayAccess) || (is_array($a))) {
       if (array_key_exists($name, $a)) {
@@ -113,7 +123,6 @@ class Context implements \ArrayAccess {
       if (($a == $this->mustache) || ($a == $this)) {
         continue;
       }
-
       $res = null;
 
       $found = false;
@@ -124,6 +133,7 @@ class Context implements \ArrayAccess {
             return null;
           }
           $res = $this->__fetch($a, $part);
+          
           $a = $res;
         }
         $found = true;
@@ -155,7 +165,7 @@ class Context implements \ArrayAccess {
     }
 
     /* raise an exception only if requested. */
-    if (($default == '__raise') || $this->mustache->raiseOnContextMiss) {
+    if (($default == '__raise') || ($this->mustache &&  $this->mustache->raiseOnContextMiss)) {
       throw new ContextMissException("Can't find $name in ".print_r($this->stack, true));
     } else {
       return $default;

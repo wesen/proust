@@ -270,6 +270,14 @@ class Mustache implements \ArrayAccess {
     return $compiledCode;
   }
 
+  public function compileClass($name, $methods) {
+    $compilerOptions = $this->compilerOptions;
+    $compilerOptions["mustache"] = $this;
+
+    $generator = new Mustache\Generator($compilerOptions);
+    return $generator->compileClass($name, $methods);
+  }
+
   /***************************************************************************
    *
    * Array access methods are mapped to context object

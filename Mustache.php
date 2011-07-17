@@ -23,6 +23,7 @@ function usage() {
   print "   -p path       : set template path\n";
   print "   -e            : evaluate templates\n";
   print "   -j json       : parse json file and pass as context to evaluation\n";
+  print "   -c name       : compile to class name\n";
 }
 
 
@@ -53,7 +54,7 @@ if (defined('STDIN')) {
     }
   }
   
-  $res = $o->getopt($argv, 'o:thip:ej:');
+  $res = $o->getopt($argv, 'o:thip:ej:c:');
   $opts = array();
   foreach ($res[0] as $foo) {
     $opts[$foo[0]] = ($foo[1] === null ? true : $foo[1]);
@@ -82,17 +83,33 @@ if (defined('STDIN')) {
   $options["compilerOptions"] = $compilerOptions;
   $m = new Mustache($options);
 
+  $methods = array();
   $code = "";
   foreach ($files as $file) {
     $tpl = file_get_contents($file);
 
-    if (_getopt($opts, "e")) {
+    if (_getopt($opts, "c")) {
+      /* store method name and code */
+      array_push($methods, array(filenameToFunctionName($file), $tpl));
+    } else if (_getopt($opts, "e")) {
       var_dump($m->render($tpl, $context));
     } else if (_getopt($opts, "t")) {
       $code .= "Tokens for $file:\n".print_r($m->getTokens($tpl), true)."\n";;
     } else {
       $code .= $m->compile($tpl, null, array("type" => "function",
                                              "name" => filenameToFunctionName($file)))."\n";
+    }
+  }
+
+  if (_getopt($opts, "c")) {
+    $className = $opts['c'];
+    $method = filenameToFunctionName($files[0]);
+    $code = $m->compileClass($className, $methods);
+    if (_getopt($opts, "e")) {
+      eval($code);
+      $obj = new $className();
+      print $obj->$method($context);
+      die();
     }
   }
 
