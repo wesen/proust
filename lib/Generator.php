@@ -9,17 +9,44 @@
 namespace Mustache;
 
 class Generator {
+  public $compileToVar = null;
+  public $compileToFunction = null;
+  public $compileToMethod = null;
+  
   public function __construct(array $options = array()) {
+    $defaults = array("compileToVar" => null,
+                      "compileToFunction" => null,
+                      "compileToMethod" => null);
+
+    $options = array_merge($defaults, $options);
+    object_set_options($this, $options, array_keys($defaults));
   }
 
-  public function compile($tokens) {
-    return "ob_start();\n".$this->compile_sub($tokens)."\nreturn ob_get_clean();\n";
+  public function compile($tokens, $code = "") {
+    $compiledCode = "\$src = '".self::escape($code)."'; ob_start();\n".$this->compile_sub($tokens)."\nreturn ob_get_clean();\n";
+
+    if ($this->compileToVar !== null) {
+      return "\$".$this->compileToVar." = function (\$ctx) { $compiledCode };";
+    }
+    if ($this->compileToFunction !== null) {
+      return "function ".$this->compileToFunction." (\$ctx) { $compiledCode };";
+    }
+    if ($this->compileToMethod !== null) {
+      return "function ".$this->compileToFunction." () { \$ctx = \$this->context; $compiledCode };";
+    }
+
+    return $compiledCode;
   }
 
   public static function escape($str) {
     return str_replace(array("\\", "'"),
                        array("\\\\", "\\'"),
                        $str);
+  }
+
+  public static function functionName($name) {
+    $name = preg_replace('/[^a-zA-Z0-9]/', '_', $name);
+    return $name;
   }
 
   public static function isAssoc($array) {
@@ -82,26 +109,30 @@ class Generator {
   public function on_section($name, $content, $start, $end) {
     $code = $this->compile_sub($content);
     $name = self::escape($name);
+    $functionName = "__section_".self::functionName($name);
     $len = $end - $start;
     $res = <<<EOD
-\$f = function () use (\$ctx) { $code };
+
+/* section $name */
 \$v = \$ctx['$name'];
-if (\$v || (\$v === 0)) {
+if (is_callable(\$v)) {
+  Mustache\\Context::PushContext(\$ctx);
+  \$ctx->output(\$ctx->render(\$v(substr(\$src, $start, $len))));
+  Mustache\\Context::PopContext(\$ctx);
+} else {
+  \$$functionName = function () use (\$ctx) { $code };
+
   if (is_array(\$v) || \$v instanceof \\Traversable) {
     if (Mustache\Generator::isAssoc(\$v)) {
       \$v = array(\$v);
     }
     foreach (\$v as \$_v) {
       \$ctx->push(\$_v);
-      \$f();
+      \$$functionName();
       \$ctx->pop();
     }
-  } else if (is_callable(\$v)) {
-    Mustache\\Context::PushContext(\$ctx);
-    \$ctx->output(\$ctx->render(\$v(substr(\$src, $start, $len))));
-    Mustache\\Context::PopContext(\$ctx);
   } else if (\$v) {
-    \$f();
+    \$$functionName();
   }
 }
 EOD;

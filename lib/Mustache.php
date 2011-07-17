@@ -19,6 +19,7 @@ class Mustache implements \ArrayAccess {
   public $templateExtension = "mustache";
   public $enableCache = true;
   public $cacheDir = "";
+  public $compilerOptions = array();
 
   public $context = null;
 
@@ -26,19 +27,16 @@ class Mustache implements \ArrayAccess {
   public $codeCache = array();
 
   public function __construct($options = array()) {
-    $options = array_merge(array("templatePath" => ".",
-                                 "templateExtension" => "mustache",
-                                 "cacheDir" => null,
-                                 "raiseOnContextMiss" => false,
-                                 "context" => null,
-                                 "enableCache" => true),
-                           $options);
-    object_set_options($this, $options, array("templatePath",
-                                              "templateExtension",
-                                              "cacheDir",
-                                              "raiseOnContextMiss",
-                                              "context",
-                                              "enableCache"));
+    $defaults = array("templatePath" => ".",
+                      "templateExtension" => "mustache",
+                      "cacheDir" => null,
+                      "raiseOnContextMiss" => false,
+                      "context" => null,
+                      "enableCache" => true,
+                      "compilerOptions" => array());
+    $options = array_merge($defaults, $options);
+    object_set_options($this, $options, array_keys($defaults));
+    
     if ($this->cacheDir == null) {
       $this->cacheDir = $this->templatePath."/.mustache_cache";
     }
@@ -124,10 +122,7 @@ class Mustache implements \ArrayAccess {
     $cachefile = $this->getCacheFilename($name);
     $f = null;
     if (file_exists($cachefile)) {
-      //      $php = file_get_contents($cachefile);
       include($cachefile);
-      //      print ("include ");
-      //      var_dump($f);
     } else {
       $code = file_get_contents($filename);
       $php = $this->compile($code, $context);
@@ -217,7 +212,7 @@ class Mustache implements \ArrayAccess {
     }
   }
 
-  public function compile($code, $context = null) {
+  public function getTokens($code, $context = null) {
     $parser = new Mustache\Parser();
     if (is_a($context, "Mustache\Context")) {
       /* weird mixture of evaluation context and compilation context, but so it is. */
@@ -230,9 +225,19 @@ class Mustache implements \ArrayAccess {
     }
     $tokens = $parser->compile($code);
 
-    $generator = new Mustache\Generator();
-    $compiledCode = $generator->compile($tokens);
-    $compiledCode = "\$f = function (\$ctx) { \$src = '".Mustache\Generator::escape($code)."'; $compiledCode };";
+    return $tokens;
+  }
+  
+  public function compile($code, $context = null, $name = null) {
+    $compilerOptions = array_merge($this->compilerOptions, array());
+    if ($name !== null) {
+      $compilerOptions["compileToFunction"] = "$name";
+    } else {
+      $compilerOptions["compileToVar"] = "f";
+    }
+    
+    $generator = new Mustache\Generator($compilerOptions);
+    $compiledCode = $generator->compile($this->getTokens($code, $context), $code);
 
     return $compiledCode;
   }
