@@ -206,7 +206,7 @@ class Mustache implements \ArrayAccess {
 
   public function getPartial($name) {
     if (array_key_exists($name, $this->partials)) {
-      return $this->partials;
+      return $this->partials[$name];
     } else {
       $filename = $this->templatePath."/".$name.".".$this->templateExtension;
       if (file_exists($filename)) {
