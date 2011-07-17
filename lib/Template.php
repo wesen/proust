@@ -36,7 +36,6 @@ class Template {
     }
     $generator = new Generator();
     $tokens = $this->getTokens($src, $context);
-    //    echo "tokens: ".print_r($tokens, true)."\n";
     return $generator->compile($tokens);
   }
 

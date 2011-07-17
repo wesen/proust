@@ -9,7 +9,7 @@
 namespace Mustache;
 
 class Generator {
-  public function __construct() {
+  public function __construct(array $options = array()) {
   }
 
   public function compile($tokens) {
@@ -128,7 +128,6 @@ return $res;
 
   public function on_tag_change($otag, $ctag) {
     return "\$ctx->setDelimiters('$otag', '$ctag');";
-    //return "";
   }
 }
 

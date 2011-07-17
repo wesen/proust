@@ -81,7 +81,7 @@ class TestSpec extends UnitTestCase {
   
   public function runTest($test) {
     $this->setUp();
-    $m = new Mustache();
+    $m = new Mustache(array("enableCache" => false));
     if (array_key_exists("partials", $test)) {
       $m->partials = $test["partials"];
     }
