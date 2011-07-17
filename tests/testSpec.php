@@ -132,8 +132,7 @@ class TestSpec extends UnitTestCase {
     /* test with disabled lambdas when test is not for lambdas */
     if (!preg_match("/lambdas/", $test["method_name"])) {
       $m = new Mustache\Mustache(array("enableCache" => false,
-                              "compilerOptions" => array("includePartialCode" => true,
-                                                         "disableLambdas" => true)));
+                              "compilerOptions" => array("disableLambdas" => true)));
       $this->runTestWithMustache($m, $test, "DISABLED LAMBDAS");
     }
 
@@ -166,9 +165,9 @@ class TestSpec extends UnitTestCase {
                               "cacheDir" => dirname(__FILE__)."/spec.cache",
                               "compilerOptions" => array("includePartialCode" => true,
                                                          "disableLambdas" => true)));
-      $this->runTestWithMustache($m, $test, "CACHE ENABLED, FIRST RUN, WITH OPTIONS");
+      $this->runTestWithMustache($m, $test, "CACHE ENABLED, FIRST RUN, DISABLED LAMBDAS, INCLUDE PARTIALS");
       $m->resetContext();
-      $this->runTestWithMustache($m, $test, "CACHE ENABLED, SECOND RUN, WITH OPTIONS");
+      $this->runTestWithMustache($m, $test, "CACHE ENABLED, FIRST RUN, DISABLED LAMBDAS, INCLUDE PARTIALS");
     }
     
   }
