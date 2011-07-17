@@ -1,9 +1,11 @@
 <?php
 
 /*
- * Mustache PHP Compiler
+ * Mustache PHP Compiler - Context object
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
+ *
+ * The context object implements context lookup and runtime partial evaluation.
  */
 
 namespace Mustache;
@@ -48,95 +50,26 @@ class Context implements \ArrayAccess {
     $this->isNewline = true;
   }
 
-  public function getMustacheInStack() {
-    foreach ($this->stack as $_s) {
-      if ($_s instanceof \Mustache) {
-        return $_s;
-      }
-    }
-    return null;
-  }
+  /***************************************************************************
+   *
+   * Context lookup methods
+   *
+   ***************************************************************************/
 
+  /* add a new context object to the context stack */
   public function push($new) {
     array_unshift($this->stack, $new);
     return $this;
   }
 
+  /* remove the top context object */
   public function pop() {
     array_shift($this->stack);
     return $this;
   }
 
-  public function output($str) {
-    if ($this->isNewline) {
-      echo $this->indentation;
-      $this->isNewline = false;
-    }
-    echo $str;
-  }
-
-  public function newline() {
-    $this->isNewline = true;
-    echo "\n";
-  }
-
-  public function isPartialRecursion($name) {
-    foreach ($this->partialStack as $partial) {
-      if ($partial["name"] == $name) {
-        return true;
-      }
-    }
-    return false;
-  }
-  
-  public function pushPartial($name, $indentation) {
-    if (count($this->partialStack) > 30) {
-      /* max recursion reached, returning warning string. */
-      return "Mustache: max recursion level reached\n";
-    }
-    
-    array_push($this->partialStack, array("name" => $name,
-                                          "indentation" => $this->indentation,
-                                          "otag" => $this->otag,
-                                          "ctag" => $this->ctag));
-    $this->indentation .= $indentation;
-    $this->ctag = $this->otag = null;
-  }
-
-  public function popPartial($name) {
-    $partial = array_pop($this->partialStack);
-    if ($partial["name"] != $name) {
-      throw new Exception("Wrong partial stack ordering, ".$partial["name"]," should be $name");
-    }
-    $this->indentation = $partial["indentation"];
-    $this->ctag = $partial["ctag"];
-    $this->otag = $partial["otag"];
-  }
-
-  public function partial($name, $indentation) {
-    $this->pushPartial($name, $indentation);
-
-    // temporarily reset to default delimiters for immediate lambda return
-    $m = $this->getMustacheInStack();
-    $res = $m->renderPartial($name, $this);
-
-    $this->popPartial($name);
-    
-    return $res;
-  }
-
-  public function setDelimiters($otag, $ctag) {
-    $this->otag = $otag;
-    $this->ctag = $ctag;
-  }
-
-  public function render($string) {
-    $m = $this->getMustacheInStack();
-    return $m->render($string, $this);
-  }
-
+  /* fetch a single path component from object $a */
   public function __fetch($a, $name) {
-    debug_log("fetching '".print_r($name, true)."' from ".print_r($a, true), 'CONTEXT');
     if (is_a($a, "Mustache\Context")) {
       return $a->fetch($name);
     }
@@ -162,16 +95,17 @@ class Context implements \ArrayAccess {
     throw new ContextMissException("Can't find $name in ".print_r($a, true));
   }
 
+  /* fetch a value from the context stack, splitting dot notation. */
   public function fetch($name, $evalDirectly = false, $default = '__raise') {
+    /* new syntax for iteration */
     if ($name === ".") {
       return $this->stack[0];
     }
-    
+
+    /* explode the dot notation */
     $list = explode(".", $name);
-    debug_log("fetching ".print_r($list, true), 'CONTEXT');
 
     $res = null;
-
     $found = false;
     
     foreach ($this->stack as $a) {
@@ -203,6 +137,7 @@ class Context implements \ArrayAccess {
     }
 
     if ($found) {
+      /* evaluate the lambda directly if it is a tag. */
       if (is_callable($res) && $evalDirectly) {
         // temporarily reset to default delimiters for immediate lambda return
         $ctag = $this->ctag;
@@ -219,12 +154,102 @@ class Context implements \ArrayAccess {
       }
     }
 
-    if (($default == '__raise') || $this->getMustacheInStack()->raiseOnContextMiss) {
+    /* raise an exception only if requested. */
+    if (($default == '__raise') || $this->mustache->raiseOnContextMiss) {
       throw new ContextMissException("Can't find $name in ".print_r($this->stack, true));
     } else {
       return $default;
     }
   }
+  
+  /***************************************************************************
+   *
+   * output functions
+   *
+   ***************************************************************************/
+
+  /* output a string to the output, taking care of indentation */
+  public function output($str) {
+    if ($this->isNewline) {
+      echo $this->indentation;
+      $this->isNewline = false;
+    }
+    echo $str;
+  }
+
+  /* output a newline to the output, taking care of indentation */
+  public function newline() {
+    $this->isNewline = true;
+    echo "\n";
+  }
+
+  /***************************************************************************
+   *
+   * partial evaluation at runtime
+   *
+   ***************************************************************************/
+
+  /* check if a partial is included recursively (ok for runtime eval, bad when compiling). */
+  public function isPartialRecursion($name) {
+    foreach ($this->partialStack as $partial) {
+      if ($partial["name"] == $name) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /* add a partial to the partial stack */
+  public function pushPartial($name, $indentation) {
+    if (count($this->partialStack) > 30) {
+      /* max recursion reached, returning warning string. */
+      return "Mustache: max recursion level reached\n";
+    }
+    
+    array_push($this->partialStack, array("name" => $name,
+                                          "indentation" => $this->indentation,
+                                          "otag" => $this->otag,
+                                          "ctag" => $this->ctag));
+    $this->indentation .= $indentation;
+    $this->ctag = $this->otag = null;
+  }
+
+  /* remove the top partial, doing some sanity checking. */
+  public function popPartial($name) {
+    $partial = array_pop($this->partialStack);
+    if ($partial["name"] != $name) {
+      throw new Exception("Wrong partial stack ordering, ".$partial["name"]," should be $name");
+    }
+    $this->indentation = $partial["indentation"];
+    $this->ctag = $partial["ctag"];
+    $this->otag = $partial["otag"];
+  }
+
+  /* render a partial at runtime. */
+  public function partial($name, $indentation) {
+    $this->pushPartial($name, $indentation);
+
+    // temporarily reset to default delimiters for immediate lambda return
+    $m = $this->mustache;
+    $res = $m->renderPartial($name, $this);
+
+    $this->popPartial($name);
+    
+    return $res;
+  }
+
+  /* set the context delimiters */
+  public function setDelimiters($otag, $ctag) {
+    $this->otag = $otag;
+    $this->ctag = $ctag;
+  }
+
+  /* render a string at runtime. */
+  public function render($string) {
+    $m = $this->mustache;
+    return $m->render($string, $this);
+  }
+
 
   /***************************************************************************
    *

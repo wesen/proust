@@ -1,9 +1,16 @@
 <?php
 
 /*
- * Template PHP Compiler
+ * Template PHP Compiler - Code generator
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
+ *
+ * This class compiles a parsed mustache template to PHP code. It can
+ * take different compiler options.
+ *
+ * - includePartialCode -> partials are directly compiled and included in the output PHP code
+ * - disableLambdas -> no function or method calls in the output
+ * - disableIndentation -> no indenting of partials, makes for faster output
  */
 
 namespace Mustache;
@@ -32,12 +39,14 @@ class Generator {
     }
   }
 
+  /** Parse $code into a token array. **/
   public function getTokens($code) {
     $parser = new Parser();
     $tokens = $parser->parse($code, $this->mustache->getContext());
     return $tokens;
   }
-  
+
+  /* Compile the code with the given options */
   public function compileCode($code, $options = array()) {
     $tokens = $this->getTokens($code);
     if ($tokens === array(":multi")) {
@@ -46,6 +55,10 @@ class Generator {
     return $this->compile($tokens, $code, $options);
   }
 
+  /**
+   * Compile the tokens with the given options. Original source should
+   * be passed as $code for lambda sections to get the raw input.
+   **/
   public function compile($tokens, $code = "", $options = array()) {
     $defaults = array("type" => "captured",
                       "name" => "f");
