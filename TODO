@@ -11,9 +11,10 @@ X add partial indentation
 X fix partial recursion context stack
 X lambda should receive the raw string -> store pos in source, add source at beginning of compile
 X store current context in context stack for lambdas
+X remove template class -> merge into mustache class
+X cache compiled partials / templates
+X add command line interface
 
-- remove template class -> merge into mustache class
-- cache compiled partials / templates
 - add option to directly include partials into code of calling template
 - implement different compiler options (enable/disable lambdas for example)
 
