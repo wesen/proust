@@ -14,13 +14,10 @@ X store current context in context stack for lambdas
 X remove template class -> merge into mustache class
 X cache compiled partials / templates
 X add command line interface
+X add option to directly include partials into code of calling template
 
-- add option to directly include partials into code of calling template
 - implement different compiler options (enable/disable lambdas for example)
-
+- write README with examples
 - add documentation
 - remove debug code
-- write README with examples
-
-- implement view classes !?? in namespace?
 - speed up context lookup
