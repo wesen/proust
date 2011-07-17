@@ -89,6 +89,15 @@ class Context implements \ArrayAccess {
     echo "\n";
   }
 
+  public function isPartialRecursion($name) {
+    foreach ($this->partialStack as $partial) {
+      if ($partial["name"] == $name) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
   public function pushPartial($name, $indentation) {
     if (count($this->partialStack) > 30) {
       /* max recursion reached, returning warning string. */
