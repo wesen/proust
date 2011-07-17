@@ -15,9 +15,10 @@ X remove template class -> merge into mustache class
 X cache compiled partials / templates
 X add command line interface
 X add option to directly include partials into code of calling template
+X implement different compiler options (enable/disable lambdas for example)
 
-- implement different compiler options (enable/disable lambdas for example)
 - write README with examples
 - add documentation
 - remove debug code
-- speed up context lookup
+
+- speed up context lookup -> literature ?!??
