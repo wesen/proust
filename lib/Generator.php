@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Template PHP Compiler - Code generator
+ * Proust - Mustache PHP Compiler - Code generator
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  *
@@ -13,19 +13,19 @@
  * - disableIndentation -> no indenting of partials, makes for faster output
  */
 
-namespace Mustache;
+namespace Proust;
 
 class Template {
-  public function __construct($mustache = null) {
-    if ($mustache === null) {
-      $mustache = new \Mustache();
+  public function __construct($proust = null) {
+    if ($proust === null) {
+      $proust = new \Proust();
     }
-    $this->mustache = $mustache;
-    $this->context = $mustache->getContext();
+    $this->proust = $proust;
+    $this->context = $proust->getContext();
   }
 
   public function __call($name, $arguments) {
-    return $this->mustache->renderPartial($name);
+    return $this->proust->renderPartial($name);
   }
 };
 
@@ -183,9 +183,9 @@ class Generator extends TokenWalker {
                                   "compileClass" => false,
                                   "outputFunction" => "\$ctx->output",
                                   "newlineFunction" => "\$ctx->newline()",
-                                  "mustache" => null,
+                                  "proust" => null,
                                   "errorOnUnhandled" => true);
-  public $mustache = null;
+  public $proust = null;
   public $includePartialCode = false;
   public $disableLambdas = false;
   public $disableObject = false;
@@ -226,7 +226,7 @@ class Generator extends TokenWalker {
   /** Parse $code into a token array. **/
   public function getTokens($code) {
     $parser = new Parser();
-    $tokens = $parser->parse($code, $this->mustache->getContext());
+    $tokens = $parser->parse($code, $this->proust->getContext());
     return $tokens;
   }
 
@@ -244,7 +244,7 @@ class Generator extends TokenWalker {
     $this->compiledMethods = array();
     $this->methodsToCompile = $codes;
     
-    $res = "class $className extends Mustache\Template {\n";
+    $res = "class $className extends Proust\Template {\n";
     while (count($this->methodsToCompile) > 0) {
       $method = array_pop($this->methodsToCompile);
       $name = $method[0];
@@ -344,7 +344,7 @@ class Generator extends TokenWalker {
     $iterationSection = "\$$functionName = function () use (\$ctx) { $code };
 
 if (is_array(\$v) || \$v instanceof \\Traversable) {
-  if (Mustache\Generator::isAssoc(\$v)) {
+  if (Proust\Generator::isAssoc(\$v)) {
     \$ctx->push(\$v);
     \$$functionName();
     \$ctx->pop();
@@ -369,9 +369,9 @@ $iterationSection
       $res = "/* section $name */
 \$v = \$ctx['$name'];
 if (is_callable(\$v)) {
-  Mustache\\Context::PushContext(\$ctx);
+  Proust\\Context::PushContext(\$ctx);
   ".$this->outputFunction."(\$ctx->render(\$v(substr(end(\$src), $start, $len))));
-  Mustache\\Context::PopContext(\$ctx);
+  Proust\\Context::PopContext(\$ctx);
 } else {
   $iterationSection
 }
@@ -389,7 +389,7 @@ if (is_callable(\$v)) {
   }
   
   public function on_partial($name, $indentation) {
-    $ctx = $this->mustache->getContext();
+    $ctx = $this->proust->getContext();
     
     if ($this->compileClass) {
       // use echo here because we already handled indentation in the partial itself
@@ -404,14 +404,14 @@ if (is_callable(\$v)) {
     if (!$this->includePartialCode) {
       if ($this->compileClass) {
         /* add partial to be compiled */
-        $m = $this->mustache;
+        $m = $this->proust;
         $code = $m->getPartial($name);
         array_push($this->methodsToCompile, array($name, $code));
       }
       $this->pushLine($str);
       return;
     } else {
-      $m = $this->mustache;
+      $m = $this->proust;
       $ctx = $m->getContext();
 
       if ($ctx->isPartialRecursion($name)) {

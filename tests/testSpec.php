@@ -1,12 +1,12 @@
 <?php
 /*
- * Mustache PHP Compiler - Test the Mustache specification
+ * Proust - Mustache PHP Compiler - Test the Mustache specification
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
 require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
-require_once(dirname(__FILE__)."/../Mustache.php");
+require_once(dirname(__FILE__)."/../Proust.php");
 require_once(dirname(__FILE__)."/../vendor/yaml/lib/sfYamlParser.php");
 
 
@@ -35,7 +35,7 @@ class TestSpec extends UnitTestCase {
     $this->tests = array();
     $parser = new sfYamlParser();
 
-    $m = new Mustache\Mustache(array("enableCache" => true,
+    $m = new Proust\Proust(array("enableCache" => true,
                             "cacheDir" => dirname(__FILE__)."/spec.cache"));
     $m->clearCache();
 
@@ -67,7 +67,7 @@ class TestSpec extends UnitTestCase {
 
     $classCode = $m->compileClass("Specs", $methods);
     eval($classCode);
-    $m = new Mustache\Mustache(array("enableCache" => false));
+    $m = new Proust\Proust(array("enableCache" => false));
     $this->obj = new Specs($m);
   }
 
@@ -87,7 +87,7 @@ class TestSpec extends UnitTestCase {
     $methodName = $test["method_name"];
 
     if (array_key_exists("partials", $test)) {
-      $this->obj->mustache->partials = $test["partials"];
+      $this->obj->proust->partials = $test["partials"];
     }
 
     $res = $this->obj->$methodName($test["data"]);
@@ -103,7 +103,7 @@ class TestSpec extends UnitTestCase {
     $this->tearDown();
   }
   
-  public function runTestWithMustache($m, $test, $info) {
+  public function runTestWithProust($m, $test, $info) {
     $this->setUp();
     if (array_key_exists("partials", $test)) {
       $m->partials = $test["partials"];
@@ -121,60 +121,60 @@ class TestSpec extends UnitTestCase {
   }
   
   public function runTest($test) {
-    $m = new Mustache\Mustache(array("enableCache" => false));
-    $this->runTestWithMustache($m, $test, "NORMAL");
+    $m = new Proust\Proust(array("enableCache" => false));
+    $this->runTestWithProust($m, $test, "NORMAL");
 
     /* run again with include partials */
-    $m = new Mustache\Mustache(array("enableCache" => false,
+    $m = new Proust\Proust(array("enableCache" => false,
                             "compilerOptions" => array("includePartialCode" => true)));
-    $this->runTestWithMustache($m, $test, "INCLUDE PARTIALS");
+    $this->runTestWithProust($m, $test, "INCLUDE PARTIALS");
 
     /* run again with no objects */
-    $m = new Mustache\Mustache(array("enableCache" => false,
+    $m = new Proust\Proust(array("enableCache" => false,
                                      "disableObjects" => true,
                                      "compilerOptions" => array("includePartialCode" => true)));
-    $this->runTestWithMustache($m, $test, "DISABLE OBJECTS");
+    $this->runTestWithProust($m, $test, "DISABLE OBJECTS");
     
     
     /* test with disabled lambdas when test is not for lambdas */
     if (!preg_match("/lambdas/", $test["method_name"])) {
-      $m = new Mustache\Mustache(array("enableCache" => false,
+      $m = new Proust\Proust(array("enableCache" => false,
                               "compilerOptions" => array("disableLambdas" => true)));
-      $this->runTestWithMustache($m, $test, "DISABLED LAMBDAS");
+      $this->runTestWithProust($m, $test, "DISABLED LAMBDAS");
     }
 
     $this->runTestWithObject($test);
         
     if (!preg_match("/partials/", $test["method_name"])) {
-      $m = new Mustache\Mustache(array("enableCache" => false,
+      $m = new Proust\Proust(array("enableCache" => false,
                               "compilerOptions" => array("disableIndentation" => true)));
-      $this->runTestWithMustache($m, $test, "DISABLED INDENTATION");
+      $this->runTestWithProust($m, $test, "DISABLED INDENTATION");
     }
       
     
     /* test caching */
-    $m = new Mustache\Mustache(array("enableCache" => true,
+    $m = new Proust\Proust(array("enableCache" => true,
                             "cacheDir" => dirname(__FILE__)."/spec.cache"));
 
-    $this->runTestWithMustache($m, $test, "CACHE ENABLED, FIRST RUN");
+    $this->runTestWithProust($m, $test, "CACHE ENABLED, FIRST RUN");
     $m->resetContext();
-    $this->runTestWithMustache($m, $test, "CACHE ENABLED, SECOND RUN");
+    $this->runTestWithProust($m, $test, "CACHE ENABLED, SECOND RUN");
 
-    $m = new Mustache\Mustache(array("enableCache" => true,
+    $m = new Proust\Proust(array("enableCache" => true,
                             "cacheDir" => dirname(__FILE__)."/spec.cache"));
-    $this->runTestWithMustache($m, $test, "CACHE ENABLED, THIRD RUN");
+    $this->runTestWithProust($m, $test, "CACHE ENABLED, THIRD RUN");
     $m->resetContext();
-    $this->runTestWithMustache($m, $test, "CACHE ENABLED, FOURTH RUN");
+    $this->runTestWithProust($m, $test, "CACHE ENABLED, FOURTH RUN");
 
     /* test caching with different compiler options */
     if (!preg_match("/lambdas/", $test["method_name"])) {
-      $m = new Mustache\Mustache(array("enableCache" => true,
+      $m = new Proust\Proust(array("enableCache" => true,
                               "cacheDir" => dirname(__FILE__)."/spec.cache",
                               "compilerOptions" => array("includePartialCode" => true,
                                                          "disableLambdas" => true)));
-      $this->runTestWithMustache($m, $test, "CACHE ENABLED, FIRST RUN, DISABLED LAMBDAS, INCLUDE PARTIALS");
+      $this->runTestWithProust($m, $test, "CACHE ENABLED, FIRST RUN, DISABLED LAMBDAS, INCLUDE PARTIALS");
       $m->resetContext();
-      $this->runTestWithMustache($m, $test, "CACHE ENABLED, FIRST RUN, DISABLED LAMBDAS, INCLUDE PARTIALS");
+      $this->runTestWithProust($m, $test, "CACHE ENABLED, FIRST RUN, DISABLED LAMBDAS, INCLUDE PARTIALS");
     }
     
   }

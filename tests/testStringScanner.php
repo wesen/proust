@@ -1,14 +1,14 @@
 <?php
 
 /*
- * Mustache PHP Compiler - Test the StringScanner class
+ * Proust - Mustache PHP Compiler - Test the StringScanner class
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
 
 require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
-require_once(dirname(__FILE__)."/../Mustache.php");
+require_once(dirname(__FILE__)."/../Proust.php");
 
 class TestStringScanner extends UnitTestCase {
   function testCreation() {

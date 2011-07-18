@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Mustache PHP Compiler - helper functions
+ * Proust - Mustache PHP Compiler - helper functions
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */

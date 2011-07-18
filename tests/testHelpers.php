@@ -1,13 +1,13 @@
 <?php
 
 /*
- * Mustache PHP Compiler - Test the helpers
+ * Proust - Mustache PHP Compiler - Test the helpers
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
 require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
-require_once(dirname(__FILE__)."/../Mustache.php");
+require_once(dirname(__FILE__)."/../Proust.php");
 
 class Test {
   public function __construct() {
@@ -18,22 +18,22 @@ class Test {
 class TestHelpers extends UnitTestCase {
   public function testIsAssoc() {
     $a = array(1, 2, 3, 4);
-    $this->assertFalse(Mustache\Generator::isAssoc($a));
+    $this->assertFalse(Proust\Generator::isAssoc($a));
 
     $a = array("foo", "bla", "hicks");
-    $this->assertFalse(Mustache\Generator::isAssoc($a));
+    $this->assertFalse(Proust\Generator::isAssoc($a));
 
     $a = array("foo" => "bla");
-    $this->assertTrue(Mustache\Generator::isAssoc($a));
+    $this->assertTrue(Proust\Generator::isAssoc($a));
 
     $a = array();
-    $this->assertFalse(Mustache\Generator::isAssoc($a));
+    $this->assertFalse(Proust\Generator::isAssoc($a));
     
     $a = array(0 => 1, 2 => 3, 5 => 7);
-    $this->assertTrue(Mustache\Generator::isAssoc($a));
+    $this->assertTrue(Proust\Generator::isAssoc($a));
 
     $a = array(1 => 0, 0 => 2, 2 => 3);
-    $this->assertTrue(Mustache\Generator::isAssoc($a));
+    $this->assertTrue(Proust\Generator::isAssoc($a));
   }
 
   public function objectSetOptions() {

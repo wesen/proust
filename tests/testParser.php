@@ -1,12 +1,12 @@
 <?php
 /*
- * Mustache PHP Compiler - Test the Parser class
+ * Proust - Mustache PHP Compiler - Test the Parser class
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
 require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
-require_once(dirname(__FILE__)."/../Mustache.php");
+require_once(dirname(__FILE__)."/../Proust.php");
 
 class TestParser extends UnitTestCase {
   function assertStartsWith($str, $prefix) {
@@ -14,7 +14,7 @@ class TestParser extends UnitTestCase {
   }
 
   public function setUp() {
-    $this->p = new Mustache\Parser();
+    $this->p = new Proust\Parser();
   }
   
   public function testEmpty() {
@@ -41,7 +41,7 @@ class TestParser extends UnitTestCase {
                                    array(":static", "foo")));
   }
 
-  public function testSimpleMustache() {
+  public function testSimpleProust() {
     $res = $this->p->parse("{{foo}}");
     $this->assertEqual($res, array(":multi",
                                    array(":mustache", ":etag", "foo")));
@@ -96,7 +96,7 @@ class TestParser extends UnitTestCase {
     try {
       $res = $this->p->parse("{{foo");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Unclosed tag");
       $this->assertTrue(true);
     }
@@ -104,7 +104,7 @@ class TestParser extends UnitTestCase {
     try {
       $res = $this->p->parse("{{foo{{bla}}");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Unclosed tag");
       $this->assertTrue(true);
     }
@@ -112,7 +112,7 @@ class TestParser extends UnitTestCase {
     try {
       $res = $this->p->parse("{{fo{o}}");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Unclosed tag");
       $this->assertTrue(true);
     }
@@ -123,7 +123,7 @@ class TestParser extends UnitTestCase {
     try {
       $res = $this->p->parse("{{ #fo#o}}");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Illegal content in tag");
       $this->assertTrue(true);
     }
@@ -133,7 +133,7 @@ class TestParser extends UnitTestCase {
     try {
       $res = $this->p->parse("{{#foo}}");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Unclosed section foo");
       $this->assertTrue(true);
     }
@@ -141,7 +141,7 @@ class TestParser extends UnitTestCase {
     try {
       $res = $this->p->parse("{{#foo}}bla");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Unclosed section foo");
       $this->assertTrue(true);
     }
@@ -149,14 +149,14 @@ class TestParser extends UnitTestCase {
     try {
       $res = $this->p->parse("{{#foo}}{{#bla}}{{/bla}}");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Unclosed section foo");
       $this->assertTrue(true);
     }
     try {
       $res = $this->p->parse("{{#foo}}{{#foo}}{{/foo}}");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Unclosed section foo");
       $this->assertTrue(true);
     }
@@ -164,7 +164,7 @@ class TestParser extends UnitTestCase {
     try {
       $res = $this->p->parse("{{#foo}}{{#bla}}");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Unclosed section bla");
       $this->assertTrue(true);
     }
@@ -172,7 +172,7 @@ class TestParser extends UnitTestCase {
     try {
       $res = $this->p->parse("{{#foo}}{{/bla}}");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Unclosed section foo");
       $this->assertTrue(true);
     }
@@ -180,7 +180,7 @@ class TestParser extends UnitTestCase {
     try {
       $res = $this->p->parse("{{bla}}{{#foo}}{{/bla}}");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Unclosed section foo");
       $this->assertTrue(true);
     }
@@ -230,7 +230,7 @@ class TestParser extends UnitTestCase {
     try {
       $res = $this->p->parse("{{/foo}}");
       $this->assertFalse(true);
-    } catch (Mustache\SyntaxError $e) {
+    } catch (Proust\SyntaxError $e) {
       $this->assertStartsWith($e->getMessage(), "Closing unopened section foo");
       $this->assertTrue(true);
     }
@@ -243,8 +243,8 @@ class TestParser extends UnitTestCase {
                                    array(":mustache", ":etag", "foo"),
                                    array(":static", "text{{text}}")));
 
-    /* create new mustache to reset ctag and otag. */
-    $this->p = new Mustache\Parser();
+    /* create new proust to reset ctag and otag. */
+    $this->p = new Proust\Parser();
     $res = $this->p->parse("{{=[[ ]]}}[[foo]]text[[={{ }}]]{{text}}");
     $this->assertEqual($res, array(":multi",
                                    array(":mustache", ":tag_change", "[[", "]]"),
