@@ -15,6 +15,50 @@
 
 namespace Mustache;
 
+function iterate($ctx, $f, $v) {
+  if (is_array($v) || $v instanceof \Traversable) {
+    if (Generator::isAssoc($v)) {
+      $ctx->push($v);
+      $f();
+      $ctx->pop();
+    } else {
+      foreach ($v as $_v) {
+        $ctx->push($_v);
+        $f();
+        $ctx->pop();
+      }
+    }
+  } else if ($v) {
+    $f();
+  }
+}
+
+function iterateLambda($ctx, $f, $v, $code, $start, $len) {
+  $res = null;
+  
+  if (is_callable($v)) {
+    Context::PushContext($ctx);
+    $res = $ctx->render($v(substr(end($code), $start, $len)));
+    Context::PopContext($ctx);
+  } else if (is_array($v) || $v instanceof \Traversable) {
+    if (Generator::isAssoc($v)) {
+      $ctx->push($v);
+      $f();
+      $ctx->pop();
+    } else {
+      foreach ($v as $_v) {
+        $ctx->push($_v);
+        $f();
+        $ctx->pop();
+      }
+    }
+  } else if ($v) {
+    $f();
+  }
+
+  return $res;
+}
+
 class Template {
   public function __construct($mustache = null) {
     if ($mustache === null) {
@@ -296,6 +340,8 @@ class Generator extends TokenWalker {
     }
     $compiledCodeCapture = "ob_start();\n".$compiledCode."return ob_get_clean();\n";
 
+    //    var_dump($compiledCode);
+    
     switch ($options["type"]) {
     case "variable":
       return "\$".$options["name"]." = function (\$ctx) { ".$compiledCodeCapture." };";
@@ -341,45 +387,18 @@ class Generator extends TokenWalker {
     $functionName = "__section_".self::functionName($name);
     $len = $end - $start;
 
-    $iterationSection = "\$$functionName = function () use (\$ctx) { $code };
-
-if (is_array(\$v) || \$v instanceof \\Traversable) {
-  if (Mustache\Generator::isAssoc(\$v)) {
-    \$ctx->push(\$v);
-    \$$functionName();
-    \$ctx->pop();
-  } else {
-    foreach (\$v as \$_v) {
-      \$ctx->push(\$_v);
-      \$$functionName();
-      \$ctx->pop();
-    }
-  }
-} else if (\$v) {
-  \$$functionName();
-}";
-    
+    $iterationSection = "\$$functionName = function () use (\$ctx".($this->disableLambdas ? "" : ", \$src").") { $code };
+\$v = \$ctx['$name'];
+";
     if ($this->disableLambdas) {
-      $res = "/* section $name */
-\$v = \$ctx['$name'];
-$iterationSection
-/* end section $name */
-";
+      $iterationSection .= "Mustache\\iterate(\$ctx, \$$functionName, \$v);\n";
     } else {
-      $res = "/* section $name */
-\$v = \$ctx['$name'];
-if (is_callable(\$v)) {
-  Mustache\\Context::PushContext(\$ctx);
-  ".$this->outputFunction."(\$ctx->render(\$v(substr(end(\$src), $start, $len))));
-  Mustache\\Context::PopContext(\$ctx);
-} else {
-  $iterationSection
-}
-/* end section $name */
-";
+      $iterationSection .= "if ((\$_res = Mustache\\iterateLambda(\$ctx, \$$functionName, \$v, \$src, $start, $len)) !== null) {
+".$this->outputFunction."(\$_res);
+}\n";
     }
-
-    $this->pushLine($res);
+      
+    $this->pushLine($iterationSection);
   }
 
   public function on_inverted_section($name, $content) {
