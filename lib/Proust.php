@@ -27,6 +27,8 @@ class Proust implements \ArrayAccess {
 
   public $partials = array();
   public $codeCache = array();
+  public $phpCache = array();
+  public $templateCache = array();
 
   public function __construct($options = array()) {
     $defaults = array("templatePath" => ".",
@@ -34,8 +36,9 @@ class Proust implements \ArrayAccess {
                       "cacheDir" => null,
                       "raiseOnContextMiss" => false,
                       "context" => null,
-                      "enableCache" => true,
+                      "enableCache" => false,
                       "disableObjects" => false,
+                      "partials" => array(),
                       "compilerOptions" => array());
     $options = array_merge($defaults, $options);
     object_set_options($this, $options, array_keys($defaults));
@@ -81,18 +84,35 @@ class Proust implements \ArrayAccess {
     return $cachefile;
   }
 
+  /* Get the cache string for a file. */
+  public function getFileCodeCacheKey($filename, $context) {
+    if (file_exists($filename)) {
+      $mtime = filemtime($filename);
+      $size = filesize($filename);
+      return "file $filename $mtime $size ".$this->getTagString($context);
+    } else {
+      throw new \Exception("could not find file $filename");
+    }
+  }
+
+  /* Get the cache index for a code fragment. */
+  public function getCodeCacheKey($code, $context) {
+    $name = "code ".sha1($code)." ".$this->getTagString($context);
+    return $name;
+  }
+    
   /* cache a code string, along with context information. Returns the evaluated function.. */
   public function getCachedCode($code, $context) {
+    $name = $this->getCodeCacheKey($code, $context);
+
+    if (array_key_exists($name, $this->codeCache)) {
+      return $this->codeCache[$name];
+    }
+
     if (!$this->enableCache) {
       $php = $this->compile($code, $context);
       eval($php);
       return $f;
-    }
-
-    $name = "code ".sha1($code)." ".$this->getTagString($context);
-
-    if (array_key_exists($name, $this->codeCache)) {
-      return $this->codeCache[$name];
     }
 
     $f = null;
@@ -110,25 +130,17 @@ class Proust implements \ArrayAccess {
     return $f;
   }
 
-  /* Get the cache string for a file. */
-  public function getFileCodeCacheKey($filename, $context) {
-    $mtime = filemtime($filename);
-    $size = filesize($filename);
-    return "file $filename $mtime $size ".$this->getTagString($context);
-  }
-
   /* cache a file, along with context information. Returns the evaluated function. */
-  function getCachedFile($filename, $context) {
-    if (!$this->enableCache) {
-      $code = file_get_contents($filename);
-      $php = $this->compile($code, $context);
-      eval($php);
-      return $f;
-    }
-
+  function getCachedFile($filename, $context = null) {
     $name = $this->getFileCodeCacheKey($filename, $context);
     if (array_key_exists($name, $this->codeCache)) {
       return $this->codeCache[$name];
+    }
+
+    if (!$this->enableCache) {
+      $php = $this->compileFile($filename, $context);
+      eval($php);
+      return $f;
     }
 
     $cachefile = $this->getCacheFilename($name);
@@ -136,8 +148,7 @@ class Proust implements \ArrayAccess {
     if (file_exists($cachefile)) {
       include($cachefile);
     } else {
-      $code = file_get_contents($filename);
-      $php = $this->compile($code, $context);
+      $php = $this->compileFile($filename, $context);
       file_put_contents($cachefile, "<? $php ?>");
       eval($php);
     }
@@ -151,7 +162,7 @@ class Proust implements \ArrayAccess {
       unlink($file);
     }
   }
-    
+
   /***************************************************************************
    *
    * Getters and Setters
@@ -183,17 +194,15 @@ class Proust implements \ArrayAccess {
   /**
    * Given a string, compile and render the string.
    **/
-  public function render($data = null, $context = null) {
+  public function render($code = null, $context = null) {
       // when not a string, return directly, don't try to parse
-    if (!is_string($data)) {
-      return $data;
+    if (!is_string($code)) {
+      return $code;
     }
 
-    if (is_string($data)) {
-      $f = $this->getCachedCode($data, $context);
+    if (is_string($code)) {
+      $f = $this->getFunction($code, $context);
       return $this->evalTemplate($f, $context);
-    } else {
-      return $data;
     }
   }
 
@@ -202,16 +211,28 @@ class Proust implements \ArrayAccess {
    * render the file as a template.
    **/
   public function renderTemplate($name, $context = null) {
-    $filename = $this->templatePath."/".$name.".".$this->templateExtension;
-    $f = $this->getCachedFile($filename, $context);
+    $f = $this->getTemplateFunction($name, $context);
     return $this->evalTemplate($f, $context);
   }
 
   public function renderFile($filename, $context = null) {
-    $f = $this->getCachedFile($filename, $context);
+    $f = $this->getFileFunction($filename, $context);
     return $this->evalTemplate($f, $context);
   }
 
+  /* Get the function to render the code. */
+  public function getFunction($code, $context = null) {
+    return $this->getCachedCode($code, $context);
+  }
+
+  public function getTemplateFunction($name, $context = null) {
+    $filename = $this->templatePath."/".$name.".".$this->templateExtension;
+    return $this->getCachedFile($filename, $context);
+  }
+
+  public function getFileFunction($filename, $context = null) {
+    return $this->getCachedFile($filename, $context);
+  }
   
   /**
    * Override this in your subclass if you want to do fun things like
@@ -261,6 +282,27 @@ class Proust implements \ArrayAccess {
     }
   }
 
+  /***************************************************************************
+   *
+   * Compiler interface
+   *
+   ***************************************************************************/
+  public function compileFile($filename, $context = null) {
+    $name = $this->getFileCodeCacheKey($filename, $context);
+    if (array_key_exists($name, $this->phpCache)) {
+      return $this->phpCache[$name];
+    }
+    $code = file_get_contents($filename);
+    $php = $this->compile($code, $context);
+    $this->phpCache[$name] = $php;
+    return $php;
+  }
+
+  public function compileTemplate($name, $context) {
+    $filename = $this->templatePath."/".$name.".".$this->templateExtension;
+    return $this->compileFile($filename, $context);
+  }
+
   /* Get the tokenized version of $code. */
   public function getTokens($code, $context = null) {
     $parser = new Parser();
@@ -268,20 +310,36 @@ class Proust implements \ArrayAccess {
     return $tokens;
   }
 
+  public function getFileTokens($filename, $context = null) {
+    $code = file_get_contents($filename);
+    return $this->getTokens($code, $context);
+  }
+
+  public function getTemplateTokens($name, $context = null) {
+    $filename = $this->templatePath."/".$name.".".$this->templateExtension;
+    return $this->getFileTokens($filename, $context);
+  }
+
   /* Compile the code, passing the options to the compiler. */
   public function compile($code, $context = null, $options = array()) {
+    $name = $this->getCodeCacheKey($code, $context);
+
+    if (array_key_exists($name, $this->phpCache)) {
+      return $this->phpCache[$name];
+    }
+    
     $compilerOptions = $this->compilerOptions;
     $compilerOptions["proust"] = $this;
 
     $options = array_merge(array("type" => "variable",
                                  "name" => "f"),
                            $options);
-    
-    
-    $generator = new Generator($compilerOptions);
-    $compiledCode = $generator->compileCode($code, $options);
 
-    return $compiledCode;
+    $generator = new Generator($compilerOptions);
+    $php = $generator->compileCode($code, $options);
+    $this->phpCache[$name] = $php;
+
+    return $php;
   }
 
   public function compileClass($name, $methods) {
