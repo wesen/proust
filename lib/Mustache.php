@@ -35,6 +35,7 @@ class Mustache implements \ArrayAccess {
                       "raiseOnContextMiss" => false,
                       "context" => null,
                       "enableCache" => true,
+                      "disableObjects" => false,
                       "compilerOptions" => array());
     $options = array_merge($defaults, $options);
     object_set_options($this, $options, array_keys($defaults));
@@ -160,7 +161,11 @@ class Mustache implements \ArrayAccess {
   /** context **/
   public function getContext() {
     if ($this->context == null) {
-      $this->context = new Context($this);
+      if ($this->disableObjects) {
+        $this->context = new ContextNoObjects($this);
+      } else {
+        $this->context = new Context($this);
+      }
     } 
     return $this->context;
   }
@@ -236,14 +241,21 @@ class Mustache implements \ArrayAccess {
 
   /* evaluates a compiled template, along with the given context. */
   public function evalTemplate($f, $context = null) {
+    $ctx = $this->getContext();
+    
     if ($context == null) {
-      return $f($this->getContext());
+      return $f($ctx);
     } else {
       try {
-        $this->getContext()->push($context);
-        return $f($this->getContext());
+        if ($ctx == $context) {
+          return $f($ctx);
+        }
+        $ctx->push($context);
+        $res = $f($ctx);
+        $ctx->pop();
+        return $res;
       } catch (\Exception $e) {
-        $this->getContext()->pop();
+        $ctx->pop();
         throw $e;
       }
     }
