@@ -128,6 +128,13 @@ class TestSpec extends UnitTestCase {
     $m = new Mustache\Mustache(array("enableCache" => false,
                             "compilerOptions" => array("includePartialCode" => true)));
     $this->runTestWithMustache($m, $test, "INCLUDE PARTIALS");
+
+    /* run again with no objects */
+    $m = new Mustache\Mustache(array("enableCache" => false,
+                                     "disableObjects" => true,
+                                     "compilerOptions" => array("includePartialCode" => true)));
+    $this->runTestWithMustache($m, $test, "DISABLE OBJECTS");
+    
     
     /* test with disabled lambdas when test is not for lambdas */
     if (!preg_match("/lambdas/", $test["method_name"])) {
