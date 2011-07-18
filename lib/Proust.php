@@ -34,8 +34,9 @@ class Proust implements \ArrayAccess {
                       "cacheDir" => null,
                       "raiseOnContextMiss" => false,
                       "context" => null,
-                      "enableCache" => true,
+                      "enableCache" => false,
                       "disableObjects" => false,
+                      "partials" => array(),
                       "compilerOptions" => array());
     $options = array_merge($defaults, $options);
     object_set_options($this, $options, array_keys($defaults));
@@ -112,9 +113,13 @@ class Proust implements \ArrayAccess {
 
   /* Get the cache string for a file. */
   public function getFileCodeCacheKey($filename, $context) {
-    $mtime = filemtime($filename);
-    $size = filesize($filename);
-    return "file $filename $mtime $size ".$this->getTagString($context);
+    if (file_exists($filename)) {
+      $mtime = filemtime($filename);
+      $size = filesize($filename);
+      return "file $filename $mtime $size ".$this->getTagString($context);
+    } else {
+      throw new \Exception("could not find file $filename");
+    }
   }
 
   /* cache a file, along with context information. Returns the evaluated function. */
