@@ -1,18 +1,18 @@
 <?php
 /*
- * Mustache PHP Compiler - Test the Generator class
+ * Proust - Mustache PHP Compiler - Test the Generator class
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
 require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
-require_once(dirname(__FILE__)."/../Mustache.php");
+require_once(dirname(__FILE__)."/../Proust.php");
 
 class TestGenerator extends UnitTestCase {
   public function setUp() {
-    $this->m = new Mustache\Mustache();
-    $this->p = new Mustache\Parser();
-    $this->g = new Mustache\Generator();
+    $this->m = new Proust\Proust();
+    $this->p = new Proust\Parser();
+    $this->g = new Proust\Generator();
     $this->c = $this->m->getContext();
   }
   

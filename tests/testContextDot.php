@@ -1,16 +1,16 @@
 <?php
 /*
- * Mustache PHP Compiler - Test the Context lookup for dot names
+ * Proust - Mustache PHP Compiler - Test the Context lookup for dot names
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
 require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
-require_once(dirname(__FILE__)."/../Mustache.php");
+require_once(dirname(__FILE__)."/../Proust.php");
 
 class TestContextDot extends UnitTestCase {
   function setUp() {
-    $this->m = new Mustache\Mustache();
+    $this->m = new Proust\Proust();
     $this->ctx = $this->m->getContext();
   }
 

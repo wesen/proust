@@ -1,12 +1,12 @@
 <?php
 /*
- * Mustache PHP Compiler - Test the Mustache class
+ * Proust - Mustache PHP Compiler - Test the Proust class
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
 require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
-require_once(dirname(__FILE__)."/../Mustache.php");
+require_once(dirname(__FILE__)."/../Proust.php");
 
 function __filename($file) {
   return dirname(__FILE__).'/files/'.$file;
@@ -15,9 +15,9 @@ function __filename($file) {
 
 require_once(dirname(__FILE__).'/classDefs.php');
 
-class TestMustache extends UnitTestCase {
+class TestProust extends UnitTestCase {
   function setUp() {
-    $this->m = new Mustache\Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
+    $this->m = new Proust\Proust(array("templatePath" => dirname(__FILE__)."/files/"));
     $this->m->clearCache();
   }
 
@@ -26,7 +26,7 @@ class TestMustache extends UnitTestCase {
   }
   
   function testSetters() {
-    $res = new Mustache\Mustache();
+    $res = new Proust\Proust();
     $this->assertEqual($res->templatePath, ".");
     $this->assertEqual($res->templateExtension, "mustache");
   }
@@ -63,7 +63,7 @@ class TestMustache extends UnitTestCase {
     $this->assertEqual($res, "1 2 3 4 5 \n");
 
     /* test reloading cached stuff */
-    $m = new Mustache\Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
+    $m = new Proust\Proust(array("templatePath" => dirname(__FILE__)."/files/"));
     $res = $m->renderTemplate("section1");
     $this->assertEqual($res, "\n");
     $res = $m->renderTemplate("section1", array("foo" => array("bla" => "bla")));
@@ -95,7 +95,7 @@ class TestMustache extends UnitTestCase {
     $this->assertEqual($res, "1 2 3 4 5 \n");
 
     /* test reloading cached stuff */
-    $m = new Mustache\Mustache(array("templatePath" => dirname(__FILE__)."/files/"));
+    $m = new Proust\Proust(array("templatePath" => dirname(__FILE__)."/files/"));
     $res = $m->renderTemplate("section1");
     $this->assertEqual($res, "\n");
     $res = $m->renderTemplate("section1", array("foo" => array("bla" => "bla")));
@@ -114,7 +114,7 @@ class TestMustache extends UnitTestCase {
     $m = $this->m;
     $res = $m->render("{{foo}}",
                       array("a" => 42,
-                            "foo" => function () { $ctx = Mustache\Context::GetContext(); return $ctx['a']; }));
+                            "foo" => function () { $ctx = Proust\Context::GetContext(); return $ctx['a']; }));
     $this->assertEqual($res, 42);
 
     $res = $m->render("{{#foo}}{{a}}{{/foo}}",
@@ -131,7 +131,7 @@ class TestMustache extends UnitTestCase {
                       array("b" => 42,
                             "a" => 100,
                             "c" => "{{b}}",
-                            "foo" => function ($text) { $ctx = Mustache\Context::GetContext(); $c = $ctx['c']; return $text.$c.$text; }));
+                            "foo" => function ($text) { $ctx = Proust\Context::GetContext(); $c = $ctx['c']; return $text.$c.$text; }));
     $this->assertEqual($res, 10042100);
     
   }

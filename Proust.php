@@ -1,21 +1,22 @@
 <?php
 
 /*
- * Mustache PHP Compiler
+ * Proust - Mustache PHP Compiler
  *
- * This is a straight port of the ruby mustache compiler
+ * This is a relatively straight port of the ruby mustache compiler,
+ * with multiple enhancements for PHP.
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
-define('MUSTACHE_PHP_VERSION_ID', '0.1');
+define('PROUST_VERSION_ID', '0.1');
 
 require_once('lib/StringScanner.php');
-require_once('lib/Mustache.php');
+require_once('lib/Proust.php');
 
 function usage() {
   print "Usage:\n\n";
-  print " mustache.php [-o outputfile] [-p partialDir] [-i] [-e] [-t] [-h] [-j json] -- inputfiles...\n\n";
+  print " Proust.php [-o outputfile] [-p partialDir] [-i] [-e] [-t] [-h] [-j json] -- inputfiles...\n\n";
   print "   -o outputfile : store php in this file\n";
   print "   -t            : print token array\n";
   print "   -h            : this information\n";
@@ -90,7 +91,7 @@ if (defined('STDIN')) {
     $options["templatePath"] = _getopt($opts, "p");
   }
   $options["compilerOptions"] = $compilerOptions;
-  $m = new Mustache\Mustache($options);
+  $m = new Proust\Proust($options);
 
   $methods = array();
   $code = "";

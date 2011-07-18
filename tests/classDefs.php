@@ -1,7 +1,7 @@
 <?php
 namespace FooBar\Bla;
 
-class FoobarBlorgBla extends \Mustache\Mustache {
+class FoobarBlorgBla extends \Proust\Proust {
 };
 
 ?>

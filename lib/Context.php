@@ -1,18 +1,18 @@
 <?php
 
 /*
- * Mustache PHP Compiler - Context object
+ * Proust - Mustache PHP Compiler - Context object
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  *
  * The context object implements context lookup and runtime partial evaluation.
  */
 
-namespace Mustache;
+namespace Proust;
 
 /**
  * A ContextMissException is raised whenever a ta's target can not be
- * found in the current context is Mustache->raiseOnContextMiss is set
+ * found in the current context is Proust->raiseOnContextMiss is set
  * to true.
  *
  * By default, it is not raised.
@@ -40,8 +40,8 @@ class Context implements \ArrayAccess {
   }
 
   /* actual context implementation */
-  public function __construct($_mustache = null) {
-    $this->mustache = $_mustache;
+  public function __construct($_proust = null) {
+    $this->proust = $_proust;
     $this->reset();
   }
 
@@ -157,7 +157,7 @@ class Context implements \ArrayAccess {
     }
 
     /* raise an exception only if requested. */
-    if (($default == '__raise') || ($this->mustache &&  $this->mustache->raiseOnContextMiss)) {
+    if (($default == '__raise') || ($this->proust &&  $this->proust->raiseOnContextMiss)) {
       throw new ContextMissException("Can't find $name");
     } else {
       return $default;
@@ -205,7 +205,7 @@ class Context implements \ArrayAccess {
   public function pushPartial($name, $indentation) {
     if (count($this->partialStack) > 30) {
       /* max recursion reached, returning warning string. */
-      return "Mustache: max recursion level reached\n";
+      return "Proust: max recursion level reached\n";
     }
     
     array_push($this->partialStack, array("name" => $name,
@@ -232,7 +232,7 @@ class Context implements \ArrayAccess {
     $this->pushPartial($name, $indentation);
 
     // temporarily reset to default delimiters for immediate lambda return
-    $m = $this->mustache;
+    $m = $this->proust;
     $res = $m->renderPartial($name, $this);
 
     $this->popPartial($name);
@@ -248,7 +248,7 @@ class Context implements \ArrayAccess {
 
   /* render a string at runtime. */
   public function render($string) {
-    $m = $this->mustache;
+    $m = $this->proust;
     return $m->render($string, $this);
   }
 

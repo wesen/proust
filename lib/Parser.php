@@ -1,14 +1,14 @@
 <?php
 
 /*
- * Template PHP Compiler - Parser
+ * Proust - Mustache PHP Compiler - Parser
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  *
  * This class takes a mustache string and tokenizes it.
  */
 
-namespace Mustache;
+namespace Proust;
 
 require_once(dirname(__FILE__).'/StringScanner.php');
 
@@ -63,7 +63,7 @@ class Parser {
   }
 
   public function parse($src, $context = null) {
-    if (is_a($context, "Mustache\Context")) {
+    if (is_a($context, "Proust\Context")) {
       /* weird mixture of evaluation context and compilation context, but so it is. */
       if ($context->otag !== null) {
         $this->otag = $context->otag;

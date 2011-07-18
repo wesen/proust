@@ -1,21 +1,21 @@
 <?php
 
 /*
- * Mustache PHP Compiler
+ * Proust - Mustache PHP Compiler
  *
- * This is a straight port of the ruby mustache compiler.
+ * This is a relatively straight port of the ruby mustache compiler.
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
-namespace Mustache;
+namespace Proust;
 
 require_once(dirname(__FILE__).'/Context.php');
 require_once(dirname(__FILE__).'/Parser.php');
 require_once(dirname(__FILE__).'/Generator.php');
 require_once(dirname(__FILE__).'/helpers.php');
 
-class Mustache implements \ArrayAccess {
+class Proust implements \ArrayAccess {
   public $raiseOnContextMiss = false;
   public $templatePath = ".";
   public $templateExtension = "mustache";
@@ -41,7 +41,7 @@ class Mustache implements \ArrayAccess {
     object_set_options($this, $options, array_keys($defaults));
     
     if ($this->cacheDir == null) {
-      $this->cacheDir = $this->templatePath."/.mustache_cache";
+      $this->cacheDir = $this->templatePath."/.proust_cache";
     }
     if ($this->enableCache) {
       $this->ensureCacheDirectoryExists();
@@ -77,7 +77,7 @@ class Mustache implements \ArrayAccess {
   /* get the filename of the actual file. */
   public function getCacheFilename($filename) {
     $cachefile = preg_replace('/[\/\\\ \.]/', '_', $filename);
-    $cachefile = $this->cacheDir."/$cachefile.mustache_cache";
+    $cachefile = $this->cacheDir."/$cachefile.proust_cache";
     return $cachefile;
   }
 
@@ -147,7 +147,7 @@ class Mustache implements \ArrayAccess {
 
   /* clears the complete cache */
   function clearCache() {
-    foreach (glob($this->cacheDir."/*.mustache_cache") as $file) {
+    foreach (glob($this->cacheDir."/*.proust_cache") as $file) {
       unlink($file);
     }
   }
@@ -176,7 +176,7 @@ class Mustache implements \ArrayAccess {
   
   /***************************************************************************
    *
-   * Mustache methods
+   * Proust methods
    *
    ***************************************************************************/
 
@@ -271,7 +271,7 @@ class Mustache implements \ArrayAccess {
   /* Compile the code, passing the options to the compiler. */
   public function compile($code, $context = null, $options = array()) {
     $compilerOptions = $this->compilerOptions;
-    $compilerOptions["mustache"] = $this;
+    $compilerOptions["proust"] = $this;
 
     $options = array_merge(array("type" => "variable",
                                  "name" => "f"),
@@ -286,7 +286,7 @@ class Mustache implements \ArrayAccess {
 
   public function compileClass($name, $methods) {
     $compilerOptions = $this->compilerOptions;
-    $compilerOptions["mustache"] = $this;
+    $compilerOptions["proust"] = $this;
 
     $generator = new Generator($compilerOptions);
     return $generator->compileClass($name, $methods);

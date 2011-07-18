@@ -1,12 +1,12 @@
 <?php
 /*
- * Mustache PHP Compiler - Test the Mustache class
+ * Proust - Mustache PHP Compiler - Test the Proust\Context class
  *
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
 require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
-require_once(dirname(__FILE__)."/../Mustache.php");
+require_once(dirname(__FILE__)."/../Proust.php");
 
 class Foobar {
   public $e = 38;
@@ -27,7 +27,7 @@ class TestContext extends UnitTestCase {
   }
 
   function setUp() {
-    $this->m = new Mustache\Mustache();
+    $this->m = new Proust\Proust();
     $this->ctx = $this->m->getContext();
   }
   
@@ -38,14 +38,14 @@ class TestContext extends UnitTestCase {
       $this->m->raiseOnContextMiss = true;
       $res = $ctx['foo'];
       $this->assertFalse(true);
-    } catch (Mustache\ContextMissException $e) {
+    } catch (Proust\ContextMissException $e) {
       $this->assertStartsWith($e->getMessage(), "Can't find foo");
     }
 
     try {
       $res = $ctx->fetch('foo');
       $this->assertFalse(true);
-    } catch (Mustache\ContextMissException $e) {
+    } catch (Proust\ContextMissException $e) {
       $this->assertStartsWith($e->getMessage(), "Can't find foo");
     }
   }
@@ -57,7 +57,7 @@ class TestContext extends UnitTestCase {
     try {
       $res = $ctx->fetch("foo", "default");
       $this->assertFalse(true);
-    } catch (Mustache\ContextMissException $e) {
+    } catch (Proust\ContextMissException $e) {
       $this->assertStartsWith($e->getMessage(), "Can't find foo");
     }
 
@@ -149,7 +149,7 @@ class TestContext extends UnitTestCase {
     $ctx->push($ctx);
     $this->assertEqual($ctx["foo"], "bar");
 
-    $ctx2 = new Mustache\Context($this->m);
+    $ctx2 = new Proust\Context($this->m);
     $ctx2->push(array("foo" => "blorg"));
     $ctx->push($ctx2);
     $this->assertEqual($ctx["foo"], "blorg");
@@ -180,7 +180,7 @@ class TestContext extends UnitTestCase {
 
     // access context
     $ctx->push(array("d" => 17,
-                     "b" => function () { $ctx = Mustache\Context::GetContext(); return $ctx["d"] + 5; }));
+                     "b" => function () { $ctx = Proust\Context::GetContext(); return $ctx["d"] + 5; }));
     $res = $ctx->fetch("b", true, null);
     $this->assertEqual($res, 22);
   }
