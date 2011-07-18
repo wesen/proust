@@ -19,6 +19,7 @@ X implement different compiler options (enable/disable lambdas for example)
 X add documentation
 X remove debug code
 X compile to class
+X speed up context lookup -> literature ?!??
 
+- memoize lookups
 - write README with examples
-- speed up context lookup -> literature ?!??
