@@ -109,6 +109,21 @@ class TestMustache extends UnitTestCase {
                                                            )));
     $this->assertEqual($res, "1 2 3 4 5 \n");
   }
+
+  function testRenderSectionNested() {
+    $m = $this->m;
+    $m->enableCache = false;
+    $res = $m->renderTemplate("section3", array("foo" => array(array("bla" => array(array("c" => 1),
+                                                                                    array("c" => 2),
+                                                                                    array("c" => 3))),
+                                                               array("bla" => array(array("c" => 4),
+                                                                                    array("c" => 5),
+                                                                                    array("c" => 6))),
+                                                               array("bla" => array(array("c" => 7),
+                                                                                    array("c" => 8),
+                                                                                    array("c" => 9))))));
+    $this->assertEqual($res, "123456789\n");
+  }
   
   function testLambdaContext() {
     $m = $this->m;
