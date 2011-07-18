@@ -297,7 +297,7 @@ class Generator extends TokenWalker {
         $compiledCode."array_pop(\$src);\n";
     }
     $compiledCodeCapture = "ob_start();\n".$compiledCode."return ob_get_clean();\n";
-    //    var_dump($compiledCode);
+    //var_dump($compiledCode);
 
     switch ($options["type"]) {
     case "variable":
@@ -347,23 +347,25 @@ class Generator extends TokenWalker {
     
     $len = $end - $start;
 
+    $v = '$'.$functionName;
+    
     $iterationSection = "
-\$return = false;
-if (is_array(\$v) || \$v instanceof \\Traversable) {
-  if (Mustache\Generator::isAssoc(\$v)) {
-    \$ctx->push(\$v);
+\$return_${functionName} = false;
+if (is_array($v) || $v instanceof \\Traversable) {
+  if (Mustache\Generator::isAssoc($v)) {
+    \$ctx->push($v);
     goto ${functionName};
   }
-} else if (\$v) {
-    \$ctx->push(\$v);
+} else if ($v) {
+    \$ctx->push($v);
     goto ${functionName};
 } else {
    goto ${functionName}_end;
 }
 
-\$return = true;
+\$return_${functionName} = true;
 ${functionName}_next:
-\$_v = each(\$v);
+\$_v = each($v);
 if (\$_v) {
   \$ctx->push(\$_v[1]);
   goto ${functionName};
@@ -374,26 +376,25 @@ if (\$_v) {
 ${functionName}:
 $code;
 \$ctx->pop();
-if (\$return) {
+if (\$return_${functionName}) {
   goto ${functionName}_next;
 }
 
 ${functionName}_end:
-   1;
 ";
     
     if ($this->disableLambdas) {
       $res = "/* section $name */
-\$v = \$ctx['$name'];
+$v = \$ctx['$name'];
 $iterationSection
 /* end section $name */
 ";
     } else {
       $res = "/* section $name */
-\$v = \$ctx['$name'];
-if (is_callable(\$v)) {
+$v = \$ctx['$name'];
+if (is_callable($v)) {
   Mustache\\Context::PushContext(\$ctx);
-  ".$this->outputFunction."(\$ctx->render(\$v(substr(end(\$src), $start, $len))));
+  ".$this->outputFunction."(\$ctx->render($v(substr(end(\$src), $start, $len))));
   Mustache\\Context::PopContext(\$ctx);
 } else {
   $iterationSection
