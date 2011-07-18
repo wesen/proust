@@ -19,10 +19,8 @@ for them. Partials can be passed dynamically or by using a template
 directory which the compiler will use to look them up. The compiled
 code can be cached dynamically and on disk by writing out php files.
 
-Features:
-
-Usage
------
+Quick example
+-------------
 
 A quick example:
 
@@ -38,6 +36,9 @@ echo $p->render("Hello {{planet}}\n", array("planet" => "World"));
 
 ?>
 ```
+
+Mustache template
+-----------------
 
 The canonical Mustache template, with a php class:
 ```php
@@ -72,6 +73,9 @@ echo $p->render($tpl, new Chris());
 
 ?>
 ```
+
+Proust options
+--------------
 
 Now on to the more compiler specific aspects of Proust. Proust can
 cache the output of the compiler in a cache directory. These files can
@@ -117,11 +121,97 @@ $data = array("foo" => array("x" => 1,
                              "z" => array(1, 2, 3, 4)));
 echo $p->renderTemplate("section1", $data);
 
-echo "\n\n";
+echo "\nIndentation disabled:\n";
 
 $p->compilerOptions["disableIndentation"] = true;
 echo $p->renderTemplate("section1", $data);
 
+echo "\nWith explicit partials:\n";
+$p->compilerOptions["disableIndentation"] = false;
+$p->partials = array("partial2" => "{{foo.y}}");
+echo $p->renderTemplate("section1", $data);
+
+echo "\nShow caching in effect:\n";
+$p->partials = array("partial2" => "NEW VERSION: {{foo.y}}");
+echo $p->renderTemplate("section1", $data);
+
+echo "\nAfter clearCache:\n";
+$p->clearCache();
+echo $p->renderTemplate("section1", $data);
+
+?>
+```
+
+Tokenized output
+-----------------
+
+To get a glimpse at the compilation results, you can use the getTokens
+(with their variants getTemplateTokens and getFileTokens), as well as
+the compile (and compileTemplate and compileFile) methods.
+
+```php
+<?php
+
+/* get code tokens */
+
+require_once(dirname(__FILE__)."/../Proust.php");
+
+$p = new Proust\Proust(array("templatePath" => dirname(__FILE__)."/templates/"));
+$p->partials = array("partial" => "{{#section}}{{bla}}{{/section}}");
+
+$tpl =<<<'EOT'
+{{#foo}}{{bla}}{{/foo}}
+{{>partial}}
+EOT;
+
+echo "Tokens:\n-------\n\n";
+var_dump($p->getTokens($tpl));
+
+echo "\n\nTemplate tokens:\n----------------\n\n";
+var_dump($p->getTemplateTokens("section1"));
+
+echo "\n\nFile tokens:\n----------------\n\n";
+var_dump($p->getFileTokens(dirname(__FILE__)."/templates/partial.mustache"));
+
+?>
+```
+
+Compiler output
+---------------
+
+```php
+<?php
+
+/* get code tokens */
+
+require_once(dirname(__FILE__)."/../Proust.php");
+
+$p = new Proust\Proust(array("templatePath" => dirname(__FILE__)."/templates/"));
+$p->partials = array("partial" => "{{#section}}{{bla}}{{/section}}");
+
+$tpl =<<<'EOT'
+{{#foo}}{{bla}}{{/foo}}
+{{>partial}}
+EOT;
+
+echo "\n\n\nCode:\n-----\n\n";
+echo $p->compile($tpl);
+echo "\n\n";
+
+$p->compilerOptions = array("includePartialCode" => true);
+echo "\n\n\nCode with included partials:\n----------------------------\n\n";
+echo $p->compile($tpl);
+echo "\n\n";
+
+$p->compilerOptions = array("disableLambdas" => true);
+echo "\n\n\nCode with disabled lambdas:\n---------------------------\n\n";
+echo $p->compile($tpl);
+echo "\n\n";
+
+$p->compilerOptions = array("disableIndentation" => true);
+echo "\n\n\nCode with disabled indentation:\n-------------------------------\n\n";
+echo $p->compile($tpl);
+echo "\n\n";
 ?>
 ```
 
