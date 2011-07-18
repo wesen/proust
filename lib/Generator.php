@@ -15,6 +15,8 @@
 
 namespace Mustache;
 
+$labelCount = 0;
+
 class Template {
   public function __construct($mustache = null) {
     if ($mustache === null) {
@@ -295,6 +297,7 @@ class Generator extends TokenWalker {
         $compiledCode."array_pop(\$src);\n";
     }
     $compiledCodeCapture = "ob_start();\n".$compiledCode."return ob_get_clean();\n";
+    //    var_dump($compiledCode);
 
     switch ($options["type"]) {
     case "variable":
@@ -336,28 +339,48 @@ class Generator extends TokenWalker {
   }
 
   public function on_section($name, $content, $start, $end) {
+    global $labelCount;
     $code = $this->subCompile($content);
     $name = self::escape($name);
-    $functionName = "__section_".self::functionName($name);
+    $functionName = "__section_".self::functionName($name)."_".$labelCount;
+    $labelCount++;
+    
     $len = $end - $start;
 
-    $iterationSection = "\$$functionName = function () use (\$ctx) { $code };
-
+    $iterationSection = "
+\$return = false;
 if (is_array(\$v) || \$v instanceof \\Traversable) {
   if (Mustache\Generator::isAssoc(\$v)) {
     \$ctx->push(\$v);
-    \$$functionName();
-    \$ctx->pop();
-  } else {
-    foreach (\$v as \$_v) {
-      \$ctx->push(\$_v);
-      \$$functionName();
-      \$ctx->pop();
-    }
+    goto ${functionName};
   }
 } else if (\$v) {
-  \$$functionName();
-}";
+    \$ctx->push(\$v);
+    goto ${functionName};
+} else {
+   goto ${functionName}_end;
+}
+
+\$return = true;
+${functionName}_next:
+\$_v = each(\$v);
+if (\$_v) {
+  \$ctx->push(\$_v[1]);
+  goto ${functionName};
+} else {
+  goto ${functionName}_end;
+}
+
+${functionName}:
+$code;
+\$ctx->pop();
+if (\$return) {
+  goto ${functionName}_next;
+}
+
+${functionName}_end:
+   1;
+";
     
     if ($this->disableLambdas) {
       $res = "/* section $name */
