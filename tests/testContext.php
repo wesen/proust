@@ -117,9 +117,14 @@ class TestContext extends UnitTestCase {
 
     $ctx->push(new Foobar());
     $res = $ctx['a'];
-    $this->assertEqual($res(), 5);
+    if (is_callable($res)) {
+      $this->assertEqual($res(), 5);
+    }
     $res = $ctx['c'];
-    $this->assertEqual($res(), 7);
+    $this->assertTrue(is_callable($res));
+    if (is_callable($res)) {
+      $this->assertEqual($res(), 7);
+    }
   }
 
   function testField() {
@@ -133,6 +138,7 @@ class TestContext extends UnitTestCase {
   }
 
   function testRecursion() {
+    
     $ctx = $this->ctx;
     $ctx->push(array("foo" => "bar"));
     $this->assertEqual($ctx["foo"], "bar");
@@ -151,10 +157,6 @@ class TestContext extends UnitTestCase {
     $ctx->push($ctx);
     $this->assertEqual($ctx["foo"], "blorg");
 
-    $ctx->push($this->m);
-    $this->assertEqual($ctx["foo"], "blorg");
-
-    $ctx->pop();
     $ctx->pop();
     $ctx->pop();
     $this->assertEqual($ctx["foo"], "bar");

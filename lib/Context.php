@@ -53,6 +53,10 @@ class Context implements \ArrayAccess {
 
   /* add a new context object to the context stack */
   public function push($new) {
+    if ($this === $new) {
+      // push empty array to avoid recursion
+      $new = array();
+    }
     array_unshift($this->stack, $new);
     return $this;
   }
@@ -78,17 +82,11 @@ class Context implements \ArrayAccess {
   }
 
   /* fetch a single path component from object $a */
-  public function __fetch($a, $name) {
-    if (is_a($a, "Mustache\Context")) {
-      return $a->fetch($name);
-    }
-
-    
+  public function __fetch($a, $name, &$found) {
+    $found = true;
     if (($a instanceof \ArrayAccess) || (is_array($a))) {
-      if (array_key_exists($name, $a)) {
+      if (isset($a[$name])) {
         return $a[$name];
-      } else if (array_key_exists((string)$name, $a)) {
-        return $a[(string)$name];
       }
     } elseif (is_object($a)) {
       $vars = get_object_vars($a);
@@ -102,7 +100,8 @@ class Context implements \ArrayAccess {
       }
     }
 
-    throw new ContextMissException("Can't find $name in ".print_r($a, true));
+    $found = false;
+    return null;
   }
 
   /* fetch a value from the context stack, splitting dot notation. */
@@ -119,28 +118,21 @@ class Context implements \ArrayAccess {
     $found = false;
     
     foreach ($this->stack as $a) {
-      /* avoid recursion */
-      if (($a == $this->mustache) || ($a == $this)) {
-        continue;
-      }
       $res = null;
-
       $found = false;
-      try {
-        foreach ($list as $part) {
-          if ($part === "") {
-            /* XXX syntax error */
-            return null;
-          }
-          $res = $this->__fetch($a, $part);
-          
-          $a = $res;
+      foreach ($list as $part) {
+        if ($part === "") {
+          /* XXX syntax error */
+          return null;
         }
-        $found = true;
-      } catch (ContextMissException $e) {
-        $found = false;
+        $res = $this->__fetch($a, $part, $found);
+        if (!$found) {
+          continue 2;
+        }
+        
+        $a = $res;
       }
-      
+
       if ($found) {
         break;
       }
@@ -166,7 +158,7 @@ class Context implements \ArrayAccess {
 
     /* raise an exception only if requested. */
     if (($default == '__raise') || ($this->mustache &&  $this->mustache->raiseOnContextMiss)) {
-      throw new ContextMissException("Can't find $name in ".print_r($this->stack, true));
+      throw new ContextMissException("Can't find $name");
     } else {
       return $default;
     }
@@ -289,5 +281,20 @@ class Context implements \ArrayAccess {
     throw new Exception("Can't remove from Context, use pop() instead");
   }  
 };
+
+class ContextNoObjects extends Context {
+  /* fetch a single path component from object $a */
+  public function __fetch($a, $name, &$found) {
+    if (($a instanceof \ArrayAccess) || (is_array($a))) {
+      if (isset($a[$name])) {
+        $found = true;
+        return $a[$name];
+      }
+    }
+
+    $found = false;
+    return null;
+  }
+}
 
 ?>
