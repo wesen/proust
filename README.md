@@ -41,6 +41,7 @@ Mustache template
 -----------------
 
 The canonical Mustache template, with a php class:
+
 ```php
 <?php
 
