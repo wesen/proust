@@ -21,6 +21,6 @@ X remove debug code
 X compile to class
 X speed up context lookup -> literature ?!??
 X write README with examples
+X memoize lookups
 
-- memoize lookups
 - pear packaging
