@@ -249,8 +249,9 @@ class Generator extends TokenWalker {
 
   public function beautifyString($str) {
     if ($this->beautify) {
-      require_once 'PHP/Beautifier.php';
-      require_once 'PHP/Beautifier/Batch.php';
+      if (!@include_once 'PHP/Beautifier.php') {
+        return $str;
+      }
       
       $o_b = new \PHP_Beautifier();
       $o_b->setBeautify(true);
