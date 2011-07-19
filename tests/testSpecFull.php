@@ -66,6 +66,11 @@ class TestSpec extends UnitTestCase {
       }
       $this->specs[$name] = $yaml;
     }
+
+    $classCode = $m->compileClass("Specs", $methods);
+    eval($classCode);
+    $m = new Proust\Proust(array("enableCache" => false));
+    $this->obj = new Specs($m);
   }
 
   public function setUp() {
@@ -79,6 +84,27 @@ class TestSpec extends UnitTestCase {
                                           new SimpleExceptionTrappingInvoker(new SpecInvoker($this)));
   }
 
+  public function runTestWithObject($test) {
+    $this->setUp();
+    $methodName = $test["method_name"];
+
+    if (array_key_exists("partials", $test)) {
+      $this->obj->proust->partials = $test["partials"];
+    }
+
+    $res = $this->obj->$methodName($test["data"]);
+    $info = "CLASS CALLING";
+    
+    $msg = "$info\nSpecification error: ".$test["desc"]."\n".
+      "Got :\n------\n*".print_r($res, true)."*\n------\n".
+      "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
+      "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n";
+    $msg = str_replace('%', '%%', $msg);
+    
+    $this->assertEqual($res, $test["expected"], $msg);
+    $this->tearDown();
+  }
+  
   public function runTestWithProust($m, $test, $info) {
     $this->setUp();
     if (array_key_exists("partials", $test)) {
@@ -89,9 +115,7 @@ class TestSpec extends UnitTestCase {
     $msg = "$info\nSpecification error: ".$test["desc"]."\n".
       "Got :\n------\n*".print_r($res, true)."*\n------\n".
       "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
-      "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n".
-      "Data: \n------\n*".print_r($test["data"], true)."*\n-------\n"
-      ;
+      "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n";
     $msg = str_replace('%', '%%', $msg);
     
     $this->assertEqual($res, $test["expected"], $msg);
@@ -99,9 +123,68 @@ class TestSpec extends UnitTestCase {
   }
   
   public function runTest($test) {
+    $m = new Proust\Proust(array("enableCache" => false));
+    $this->runTestWithProust($m, $test, "NORMAL");
+
+    /* run again with include partials */
+    $m = new Proust\Proust(array("enableCache" => false,
+                            "compilerOptions" => array("includePartialCode" => true)));
+    $this->runTestWithProust($m, $test, "INCLUDE PARTIALS");
+
+    /* run again with beautify */
     $m = new Proust\Proust(array("enableCache" => false,
                                  "compilerOptions" => array("beautify" => true)));
-    $this->runTestWithProust($m, $test, "NORMAL");
+    $this->runTestWithProust($m, $test, "BEAUTIFY");
+
+    
+    /* run again with no objects */
+    $m = new Proust\Proust(array("enableCache" => false,
+                                     "disableObjects" => true,
+                                     "compilerOptions" => array("includePartialCode" => true)));
+    $this->runTestWithProust($m, $test, "DISABLE OBJECTS");
+    
+    
+    /* test with disabled lambdas when test is not for lambdas */
+    if (!preg_match("/lambdas/", $test["method_name"])) {
+      $m = new Proust\Proust(array("enableCache" => false,
+                              "compilerOptions" => array("disableLambdas" => true)));
+      $this->runTestWithProust($m, $test, "DISABLED LAMBDAS");
+    }
+
+    $this->runTestWithObject($test);
+        
+    if (!preg_match("/partials/", $test["method_name"])) {
+      $m = new Proust\Proust(array("enableCache" => false,
+                              "compilerOptions" => array("disableIndentation" => true)));
+      $this->runTestWithProust($m, $test, "DISABLED INDENTATION");
+    }
+      
+    
+    /* test caching */
+    $m = new Proust\Proust(array("enableCache" => true,
+                            "cacheDir" => dirname(__FILE__)."/spec.cache"));
+
+    $this->runTestWithProust($m, $test, "CACHE ENABLED, FIRST RUN");
+    $m->resetContext();
+    $this->runTestWithProust($m, $test, "CACHE ENABLED, SECOND RUN");
+
+    $m = new Proust\Proust(array("enableCache" => true,
+                            "cacheDir" => dirname(__FILE__)."/spec.cache"));
+    $this->runTestWithProust($m, $test, "CACHE ENABLED, THIRD RUN");
+    $m->resetContext();
+    $this->runTestWithProust($m, $test, "CACHE ENABLED, FOURTH RUN");
+
+    /* test caching with different compiler options */
+    if (!preg_match("/lambdas/", $test["method_name"])) {
+      $m = new Proust\Proust(array("enableCache" => true,
+                              "cacheDir" => dirname(__FILE__)."/spec.cache",
+                              "compilerOptions" => array("includePartialCode" => true,
+                                                         "disableLambdas" => true)));
+      $this->runTestWithProust($m, $test, "CACHE ENABLED, FIRST RUN, DISABLED LAMBDAS, INCLUDE PARTIALS");
+      $m->resetContext();
+      $this->runTestWithProust($m, $test, "CACHE ENABLED, FIRST RUN, DISABLED LAMBDAS, INCLUDE PARTIALS");
+    }
+    
   }
 
   public function runSpec($spec) {
