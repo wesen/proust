@@ -27,6 +27,7 @@ function usage() {
   print "   --disable-lambdas : disable lambdas for compilation\n";
   print "   --disable-indentation : disable indentation for compilation\n";
   print "   --include-partials : include partials directly as code\n";
+  print "   --beautify     : beautify generated code\n";
 }
 
 
@@ -58,8 +59,12 @@ if (defined('STDIN')) {
     }
   }
   
-  $res = $o->getopt($argv, 'o:thp:ej:c:', array("disable-lambdas", "disable-indentation", "include-partials"));
+  $res = $o->getopt($argv, 'o:thp:ej:c:', array("disable-lambdas", "disable-indentation", "include-partials", "beautify"));
   $opts = array();
+  if (is_a($res, "PEAR_error")) {
+    usage();
+    die();
+  }
   foreach ($res[0] as $foo) {
     $opts[$foo[0]] = ($foo[1] === null ? true : $foo[1]);
   }
@@ -86,6 +91,9 @@ if (defined('STDIN')) {
   }
   if (_getopt($opts, "--disable-indentation")) {
     $compilerOptions["disableIndentation"] = true;
+  }
+  if (_getopt($opts, "--beautify")) {
+    $compilerOptions["beautify"] = true;
   }
   if (_getopt($opts, "p")) {
     $options["templatePath"] = _getopt($opts, "p");
@@ -124,7 +132,7 @@ if (defined('STDIN')) {
   }
 
   if (!_getopt($opts, 't') && !_getopt($opts, "e")) {
-    $code = "<?php $code ?>";
+    $code = "<?php\n\n$code\n?>\n";
     if (_getopt($opts, 'o') !== null) {
       file_put_contents($opts['o'], $code);
       print "Written to ".$opts['o']."\n";
