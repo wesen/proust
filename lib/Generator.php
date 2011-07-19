@@ -179,6 +179,7 @@ class IndentationRemover extends IdentityWalker {
 
 class Generator extends TokenWalker {
   public static $defaults = array("includePartialCode" => false,
+                                  "includeDynamicPartials" => false,
                                   "disableLambdas" => false,
                                   "disableIndentation" => false,
                                   "compileClass" => false,
@@ -188,6 +189,7 @@ class Generator extends TokenWalker {
                                   "proust" => null,
                                   "errorOnUnhandled" => true);
   public $proust = null;
+  public $includeDynamicPartials = false;
   public $includePartialCode = false;
   public $disableLambdas = false;
   public $disableObject = false;
@@ -447,18 +449,24 @@ if (is_callable(\$v)) {
     } else {
       $str = $this->outputFunction."(\$ctx->partial('$name', '$indentation'));\n";
     }
+
+    $m = $this->proust;
+    
+    if (!$this->includeDynamicPartials &&
+        !$m->isPartialStatic($name)) {
+      $this->pushLine($str);
+      return;
+    }
     
     if (!$this->includePartialCode) {
       if ($this->compileClass) {
         /* add partial to be compiled */
-        $m = $this->proust;
         $code = $m->getPartial($name);
         array_push($this->methodsToCompile, array($name, $code));
       }
       $this->pushLine($str);
       return;
     } else {
-      $m = $this->proust;
       $ctx = $m->getContext();
 
       if ($ctx->isPartialRecursion($name)) {
