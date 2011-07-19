@@ -15,6 +15,7 @@
 
 namespace Proust;
 
+
 class Template {
   public function __construct($proust = null) {
     if ($proust === null) {
@@ -183,6 +184,7 @@ class Generator extends TokenWalker {
                                   "compileClass" => false,
                                   "outputFunction" => "\$ctx->output",
                                   "newlineFunction" => "\$ctx->newline()",
+                                  "beautify" => false,
                                   "proust" => null,
                                   "errorOnUnhandled" => true);
   public $proust = null;
@@ -213,7 +215,12 @@ class Generator extends TokenWalker {
     }
     return false;
   }
-  
+
+  /***************************************************************************
+   *
+   * Constructor
+   *
+   ***************************************************************************/
   public function __construct(array $options = array()) {
     parent::__construct(array_merge(self::$defaults, $options));
 
@@ -221,6 +228,7 @@ class Generator extends TokenWalker {
       $this->outputFunction = 'echo';
       $this->newlineFunction = 'echo("\n")';
     }
+
   }
 
   /** Parse $code into a token array. **/
@@ -239,10 +247,36 @@ class Generator extends TokenWalker {
     return $this->compile($tokens, $code, $options);
   }
 
+  public function beautifyString($str) {
+    if ($this->beautify) {
+      require_once 'PHP/Beautifier.php';
+      require_once 'PHP/Beautifier/Batch.php';
+      
+      $o_b = new \PHP_Beautifier();
+      $o_b->setBeautify(true);
+      $o_b->addFilter('ListClassFunction');
+      $o_b->setIndentChar(' ');
+      $o_b->setIndentNumber(2);
+      $o_b->setNewLine("\n");
+      $o_b->setInputString("<? $str ?>");
+      $o_b->process();
+      $res = $o_b->get();
+      $res = preg_replace('/^\<\?\s+/', '', $res);
+      $res = preg_replace('/\s+\?\>$/', '', $res);
+      return $res;
+    } else {
+      return $str;
+    }
+  }
+
+  /* compiles the given methods to a class. */
   public function compileClass($className, $codes) {
     $this->compileClass = true;
     $this->compiledMethods = array();
     $this->methodsToCompile = $codes;
+
+    $prevBeautify = $this->beautify;
+    $this->beautify = false;
     
     $res = "class $className extends Proust\Template {\n";
     while (count($this->methodsToCompile) > 0) {
@@ -263,7 +297,10 @@ class Generator extends TokenWalker {
 
     $res .= "};\n";
 
-    return $res;
+    $this->beautify = $prevBeautify;
+    
+    return $this->beautifyString($res);
+    // return $res;
   }
 
   /**
@@ -286,7 +323,8 @@ class Generator extends TokenWalker {
 
     /* we have been called by a parent compiler */
     if ($options["type"] == "sub") {
-      return $compiledCode;
+      $res = $compiledCode;
+      goto compile_return;
     }
     
     if (!$this->disableLambdas) {
@@ -298,24 +336,32 @@ class Generator extends TokenWalker {
 
     switch ($options["type"]) {
     case "variable":
-      return "\$".$options["name"]." = function (\$ctx) { ".$compiledCodeCapture." };";
+      $res = "\$".$options["name"]." = function (\$ctx) { ".$compiledCodeCapture." };";
+      break;
       
     case "function":
-      return "function ".$options["name"]." (\$ctx) { ".$compiledCodeCapture." };";
+      $res = "function ".$options["name"]." (\$ctx) { ".$compiledCodeCapture." };";
+      break;
       
     case "method":
-      return "function ".$options["name"]." (\$data = null) {\n".
+      $res = "function ".$options["name"]." (\$data = null) {\n".
         "  \$ctx = \$this->context; \$ctx->reset(\$data);\n".
         "  ".$compiledCodeCapture."\n".
         "}\n";
+      break;
 
     case "captured":
-      return $compiledCodeCapture;
+      $res = $compiledCodeCapture;
+      break;
 
     case "raw":
     default:
-      return $compiledCode;
+      $res = $compiledCode;
+    break;
     }
+    
+  compile_return:
+    return $this->beautifyString($res);
   }
 
   public function subCompile($tokens) {
