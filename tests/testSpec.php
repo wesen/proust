@@ -37,7 +37,8 @@ class TestSpec extends UnitTestCase {
 
     $m = new Proust\Proust(array("enableCache" => true,
                                  "cacheDir" => dirname(__FILE__)."/spec.cache",
-                                 "compilerOptions" => array("beautify" => true)));
+                                 "compilerOptions" => array("beautify" => false,
+                                                            "includeDynamicPartials" => true)));
     $m->clearCache();
 
     $methods = array();
@@ -67,6 +68,7 @@ class TestSpec extends UnitTestCase {
     }
 
     $classCode = $m->compileClass("Specs", $methods);
+    file_put_contents("/tmp/specClass.php", $classCode);
     eval($classCode);
     $m = new Proust\Proust(array("enableCache" => false));
     $this->obj = new Specs($m);
