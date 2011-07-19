@@ -19,7 +19,7 @@ namespace Proust;
 class Template {
   public function __construct($proust = null) {
     if ($proust === null) {
-      $proust = new \Proust();
+      $proust = new Proust();
     }
     $this->proust = $proust;
     $this->context = $proust->getContext();
@@ -255,7 +255,6 @@ class Generator extends TokenWalker {
       
       $o_b = new \PHP_Beautifier();
       $o_b->setBeautify(true);
-      $o_b->addFilter('ListClassFunction');
       $o_b->setIndentChar(' ');
       $o_b->setIndentNumber(2);
       $o_b->setNewLine("\n");
@@ -346,7 +345,7 @@ class Generator extends TokenWalker {
       
     case "method":
       $res = "function ".$options["name"]." (\$data = null) {\n".
-        "  \$ctx = \$this->context; \$ctx->reset(\$data);\n".
+        "  \$ctx = \$this->context; if (\$data !== null) { \$ctx->reset(\$data); }\n".
         "  ".$compiledCodeCapture."\n".
         "}\n";
       break;
