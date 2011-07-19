@@ -61,6 +61,15 @@ class Context implements \ArrayAccess {
     return $this;
   }
 
+  public function pushRef(&$new) {
+    if ($this === $new) {
+      // push empty array to avoid recursion
+      $new = array();
+    }
+    array_unshift($this->stack, $new);
+    return $this;
+  }
+  
   /* remove the top context object */
   public function pop() {
     array_shift($this->stack);
@@ -282,6 +291,7 @@ class Context implements \ArrayAccess {
 
   /** Add a value to the context. **/
   function offsetSet ( $offset ,  $value ) {
+    $res = array($offset => $value);
     $this->push(array($offset => $value));
   }
 

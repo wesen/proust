@@ -394,12 +394,12 @@ class Generator extends TokenWalker {
 
 if (is_array(\$v) || \$v instanceof \\Traversable) {
   if (Proust\Generator::isAssoc(\$v)) {
-    \$ctx->push(\$v);
+    \$ctx->pushRef(\$v);
     \$$functionName();
     \$ctx->pop();
   } else {
-    foreach (\$v as \$_v) {
-      \$ctx->push(\$_v);
+    foreach (\$v as &\$_v) {
+      \$ctx->pushRef(\$_v);
       \$$functionName();
       \$ctx->pop();
     }
