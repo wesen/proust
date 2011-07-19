@@ -23,6 +23,7 @@ class ContextMissException extends \Exception {
 class Context implements \ArrayAccess {
   public $stack = null;
   public $partialStack = null;
+  public $memoStack = null;
 
   /* Keep a stack of global contexts for lambdas */
   static $GLOBAL_CONTEXT = array();
@@ -58,6 +59,8 @@ class Context implements \ArrayAccess {
       $new = array();
     }
     array_unshift($this->stack, $new);
+    $this->memoizer = array();
+    array_unshift($this->memoStack, $this->memoizer);
     return $this;
   }
 
@@ -67,27 +70,30 @@ class Context implements \ArrayAccess {
       $new = array();
     }
     array_unshift($this->stack, $new);
+    $this->memoizer = array();
+    array_unshift($this->memoStack, $this->memoizer);
     return $this;
   }
   
   /* remove the top context object */
   public function pop() {
     array_shift($this->stack);
+    $this->memoizer = array_shift($this->memoStack);
     return $this;
   }
 
   public function reset($data = null) {
-    if ($data !== null) {
-      $this->stack = array($data);
-    } else {
-      $this->stack = array();
-    }
-
+    $this->stack = array();
+    $this->memoStack = array();
     $this->partialStack = array();
     $this->otag = null;
     $this->ctag = null;
     $this->indentation = "";
     $this->isNewline = true;
+
+    if ($data !== null) {
+      $this->pushRef($data);
+    }
   }
 
   /* fetch a single path component from object $a */
@@ -122,30 +128,37 @@ class Context implements \ArrayAccess {
 
     /* explode the dot notation */
     $list = explode(".", $name);
-
+    
     $res = null;
     $found = false;
-    
-    foreach ($this->stack as $a) {
-      $res = null;
-      $found = false;
-      foreach ($list as $part) {
-        if ($part === "") {
-          /* XXX syntax error */
-          return null;
-        }
-        $res = $this->__fetch($a, $part, $found);
-        if (!$found) {
-          continue 2;
+
+    if (isset($this->memoizer[$name])) {
+      $res = $this->memoizer[$name];
+      $found = true;
+    } else {
+      foreach ($this->stack as $a) {
+        $res = null;
+        $found = false;
+        foreach ($list as $part) {
+          if ($part === "") {
+            /* XXX syntax error */
+            return null;
+          }
+          $res = $this->__fetch($a, $part, $found);
+          if (!$found) {
+            continue 2;
+          }
+          
+          $a = $res;
         }
         
-        $a = $res;
-      }
-
-      if ($found) {
-        break;
+        if ($found) {
+          $this->memoizer[$name] = $res;
+          break;
+        }
       }
     }
+
 
     if ($found) {
       /* evaluate the lambda directly if it is a tag. */
