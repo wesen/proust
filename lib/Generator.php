@@ -82,7 +82,7 @@ class TokenWalker {
 
   public function __default($tokens) {
     if ($this->errorOnUnhandled) {
-      throw new \Exception("Unhandled expression ".$tokens[0]);
+      throw new \Exception("Unhandled expression ".print_r($tokens, true));
     }
   }
 
@@ -364,7 +364,8 @@ class Generator extends TokenWalker {
     }
     
   compile_return:
-    return $this->beautifyString($res);
+    $res =  $this->beautifyString($res);
+    return $res;
   }
 
   public function subCompile($tokens) {
@@ -436,6 +437,13 @@ if (is_callable(\$v)) {
     $name = self::escape($name);
     $this->pushLine("/* inverted section $name */\n\$v = \$ctx['$name']; if (!\$v && (\$v !== 0)) { $code }\n");
   }
+
+  public function on_when_section($name, $content) {
+    $code = $this->subCompile($content);
+    $name = self::escape($name);
+    $this->pushLine("/* when section $name */\n\$v = \$ctx['$name']; if (\$v) { $code }\n");
+  }
+  
   
   public function on_partial($name, $indentation) {
     $ctx = $this->proust->getContext();

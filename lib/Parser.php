@@ -41,8 +41,8 @@ EOD;
 
 class Parser {
   /** lines where only these tags are present should be removed. **/
-  static $STANDALONE_LINES = array('=', '!', '#', '^', '/', '>');
-  static $SECTION_TYPES = array('#', '^', '/');
+  static $STANDALONE_LINES = array('=', '!', '#', '^', '/', '>', '?');
+  static $SECTION_TYPES = array('#', '^', '?', '/');
 
   /** allowed content in a tag name. **/
   static $ALLOWED_CONTENT = '(\w|[\?\!\/\_\-\.])*';
@@ -103,6 +103,27 @@ class Parser {
     return $this->result;
   }
 
+  /* close the current section */
+  public function closeSection($content, $startPos) {
+    $section = array_pop($this->sections);
+    
+    if ($section === null) {
+      throw new SyntaxError("Closing unopened section $content", $this->getPosition());
+    }
+    
+    if ($section["section"] !== $content) {
+      throw new SyntaxError("Unclosed section ".$section["section"], $this->getPosition());
+    }
+    
+    /* store end of section for lambda sections */
+    $this->result = &$section["result"];
+    $count = count($this->result);
+    $token = &$this->result[$count-1];
+    if ($token[1] === ":section") {
+      $token[5] = $startPos;
+    }
+  }
+
   /** Find {{mustaches}} and add them to the result array. **/
   public function scanTags() {
     /* record startpos for closing section tags */
@@ -119,7 +140,7 @@ class Parser {
     $this->scanner->skip("\s*");
 
     /* scan for type */
-    $type = $this->scanner->scan("[#^\/=!<>^{&]");
+    $type = $this->scanner->scan("[#^\/=!<>^{&\?]");
 
     /* skip whitespace after tag */
     $this->scanner->skip("\s*");
@@ -239,38 +260,49 @@ class Parser {
       array_push($this->result, array(":mustache", ":section", $content, &$block, $endPos, 0));
       /* record section position for lambda sections */
       array_push($this->sections, array("section" => $content,
+                                        "type" => ":section",
                                         "position" => $this->getPosition(),
                                         "result" => &$this->result));
       $this->result = &$block;
       break;
 
     case '^':
+      $prev_section = end($this->sections);
+      if ($prev_section) {
+        if (($prev_section["section"] == $content) &&
+            ($prev_section["type"] == ":when_section")) {
+          $this->closeSection($content, $startPos);
+        }
+      }
+      
       $block = array(":multi");
       array_push($this->result, array(":mustache", ":inverted_section", $content, &$block));
       array_push($this->sections, array("section" => $content,
+                                        "type" => ":inverted_section",
                                         "position" => $this->getPosition(),
                                         "result" => &$this->result));
       $this->result = &$block;
       break;
 
-    case '/':
-      $section = array_pop($this->sections);
-
-      if ($section === null) {
-        throw new SyntaxError("Closing unopened section $content", $this->getPosition());
+    case '?':
+      $prev_section = end($this->sections);
+      if ($prev_section) {
+        if (($prev_section["section"] == $content) &&
+            ($prev_section["type"] == ":inverted_section")) {
+          $this->closeSection($content, $startPos);
+        }
       }
+      $block = array(":multi");
+      array_push($this->result, array(":mustache", ":when_section", $content, &$block));
+      array_push($this->sections, array("section" => $content,
+                                        "type" => ":when_section",
+                                        "position" => $this->getPosition(),
+                                        "result" => &$this->result));
+      $this->result = &$block;
+      break;
       
-      if ($section["section"] !== $content) {
-        throw new SyntaxError("Unclosed section ".$section["section"], $this->getPosition());
-      }
-
-      /* store end of section for lambda sections */
-      $this->result = &$section["result"];
-      $count = count($this->result);
-      $token = &$this->result[$count-1];
-      if ($token[1] === ":section") {
-        $token[5] = $startPos;
-      }
+    case '/':
+      $this->closeSection($content, $startPos);
       break;
 
     case '!':
