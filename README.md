@@ -294,7 +294,9 @@ Usage:
 Known Issues
 ------------
 
-  * None :)
+* Beware of caching and the compiler option "includePartialCode". When
+  partials are changed, the compiled code won't be updated, and still
+  contain the all partials.
 
 See Also
 --------
