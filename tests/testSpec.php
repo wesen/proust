@@ -68,7 +68,6 @@ class TestSpec extends UnitTestCase {
     }
 
     $classCode = $m->compileClass("Specs", $methods);
-    file_put_contents("/tmp/specClass.php", $classCode);
     eval($classCode);
     $m = new Proust\Proust(array("enableCache" => false));
     $this->obj = new Specs($m);
