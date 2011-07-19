@@ -73,7 +73,7 @@ class Context implements \ArrayAccess {
     } else {
       $this->stack = array();
     }
-    
+
     $this->partialStack = array();
     $this->otag = null;
     $this->ctag = null;
@@ -220,7 +220,7 @@ class Context implements \ArrayAccess {
   public function popPartial($name) {
     $partial = array_pop($this->partialStack);
     if ($partial["name"] != $name) {
-      throw new Exception("Wrong partial stack ordering, ".$partial["name"]," should be $name");
+      throw new \Exception("Wrong partial stack ordering, ".$partial["name"]." should be $name");
     }
     $this->indentation = $partial["indentation"];
     $this->ctag = $partial["ctag"];
