@@ -41,8 +41,8 @@ EOD;
 
 class Parser {
   /** lines where only these tags are present should be removed. **/
-  static $STANDALONE_LINES = array('=', '!', '#', '^', '/', '>', '?');
-  static $SECTION_TYPES = array('#', '^', '?', '/');
+  static $STANDALONE_LINES = array('=', '!', '#', '^', '/', '>', '?', ',');
+  static $SECTION_TYPES = array('#', '^', '?', '/', ',');
 
   /** allowed content in a tag name. **/
   static $ALLOWED_CONTENT = '(\w|[\?\!\/\_\-\.])*';
@@ -140,7 +140,7 @@ class Parser {
     $this->scanner->skip("\s*");
 
     /* scan for type */
-    $type = $this->scanner->scan("[#^\/=!<>^{&\?]");
+    $type = $this->scanner->scan("[#^\/=!<>^{&\?,]");
 
     /* skip whitespace after tag */
     $this->scanner->skip("\s*");
@@ -266,6 +266,17 @@ class Parser {
       $this->result = &$block;
       break;
 
+    case ',':
+      $block = array(":multi");
+      array_push($this->result, array(":mustache", ":loop_section", $content, &$block));
+      /* record section position for lambda sections */
+      array_push($this->sections, array("section" => $content,
+                                        "type" => ":section",
+                                        "position" => $this->getPosition(),
+                                        "result" => &$this->result));
+      $this->result = &$block;
+      break;
+      
     case '^':
       $prev_section = end($this->sections);
       if ($prev_section) {
