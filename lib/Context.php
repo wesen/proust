@@ -233,7 +233,11 @@ class Context implements \ArrayAccess {
 
     // temporarily reset to default delimiters for immediate lambda return
     $m = $this->proust;
-    $res = $m->renderPartial($name, $this);
+    if ($m) {
+      $res = $m->renderPartial($name, $this);
+    } else {
+      $res = "";
+    }
 
     $this->popPartial($name);
     
@@ -249,7 +253,11 @@ class Context implements \ArrayAccess {
   /* render a string at runtime. */
   public function render($string) {
     $m = $this->proust;
-    return $m->render($string, $this);
+    if ($m) {
+      return $m->render($string, $this);
+    } else {
+      return "";
+    }
   }
 
 

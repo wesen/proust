@@ -36,7 +36,8 @@ class TestSpec extends UnitTestCase {
     $parser = new sfYamlParser();
 
     $m = new Proust\Proust(array("enableCache" => true,
-                            "cacheDir" => dirname(__FILE__)."/spec.cache"));
+                                 "cacheDir" => dirname(__FILE__)."/spec.cache",
+                                 "compilerOptions" => array("beautify" => true)));
     $m->clearCache();
 
     $methods = array();
@@ -129,6 +130,12 @@ class TestSpec extends UnitTestCase {
                             "compilerOptions" => array("includePartialCode" => true)));
     $this->runTestWithProust($m, $test, "INCLUDE PARTIALS");
 
+    /* run again with beautify */
+    $m = new Proust\Proust(array("enableCache" => false,
+                                 "compilerOptions" => array("beautify" => true)));
+    $this->runTestWithProust($m, $test, "BEAUTIFY");
+
+    
     /* run again with no objects */
     $m = new Proust\Proust(array("enableCache" => false,
                                      "disableObjects" => true,
