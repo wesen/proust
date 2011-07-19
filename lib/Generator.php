@@ -385,6 +385,25 @@ class Generator extends TokenWalker {
     $this->pushLine($this->newlineFunction.";");
   }
 
+  public function on_loop_section($name, $content) {
+    $code = $this->subCompile($content);
+    $name = self::escape($name);
+    $functionName = "__section_".self::functionName($name);
+    $res = "/* loop section $name */
+\$v = \$ctx['$name'];
+
+if (is_array(\$v) || \$v instanceof \\Traversable) {
+  foreach (\$v as &\$_v) {
+    \$ctx->pushRef(\$_v);
+    $code
+    \$ctx->pop();
+  }
+}
+/* end of loop section $name */
+";
+    $this->pushLine($res);
+  }
+  
   public function on_section($name, $content, $start, $end) {
     $code = $this->subCompile($content);
     $name = self::escape($name);
