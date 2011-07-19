@@ -255,6 +255,7 @@ class Generator extends TokenWalker {
       
       $o_b = new \PHP_Beautifier();
       $o_b->setBeautify(true);
+      $o_b->addFilter('ListClassFunction');
       $o_b->setIndentChar(' ');
       $o_b->setIndentNumber(2);
       $o_b->setNewLine("\n");
