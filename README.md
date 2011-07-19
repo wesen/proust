@@ -180,6 +180,11 @@ var_dump($p->getFileTokens(dirname(__FILE__)."/templates/partial.mustache"));
 Compiler output
 ---------------
 
+The compiler output can be beautified by installing the PHP_Beautifyer
+PEAR extension, and setting the compiler option "beautify" to
+true. This is not entirely tested, and is a bit brittle (it happened
+to break a huge class compilation, but that has been "avoided" for now).
+
 ```php
 <?php
 
@@ -296,7 +301,9 @@ Known Issues
 
 * Beware of caching and the compiler option "includePartialCode". When
   partials are changed, the compiled code won't be updated, and still
-  contain the all partials.
+  contain the all partials. If you want to include dynamic partials as
+  well (even more volatile), please set the compiler options
+  "includeDynamicPartials" to true.
 
 See Also
 --------
