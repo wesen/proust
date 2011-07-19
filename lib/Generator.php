@@ -390,13 +390,12 @@ class Generator extends TokenWalker {
     $name = self::escape($name);
     $functionName = "__section_".self::functionName($name);
     $res = "/* loop section $name */
-\$$functionName = function () use (\$ctx) { $code };
 \$v = \$ctx['$name'];
 
 if (is_array(\$v) || \$v instanceof \\Traversable) {
   foreach (\$v as &\$_v) {
     \$ctx->pushRef(\$_v);
-    \$$functionName();
+    $code
     \$ctx->pop();
   }
 }
