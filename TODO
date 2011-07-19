@@ -20,6 +20,7 @@ X add documentation
 X remove debug code
 X compile to class
 X speed up context lookup -> literature ?!??
+X write README with examples
 
 - memoize lookups
-- write README with examples
+- pear packaging
