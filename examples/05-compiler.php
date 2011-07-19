@@ -1,6 +1,6 @@
 <?php
 
-/* get code tokens */
+/* compile some templates */
 
 require_once(dirname(__FILE__)."/../Proust.php");
 
