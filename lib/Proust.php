@@ -242,7 +242,12 @@ class Proust implements \ArrayAccess {
     if (array_key_exists($name, $this->partials)) {
       return $this->render($this->partials[$name], $context);
     } else {
-      return $this->renderTemplate($name, $context);
+      $filename = $this->templatePath."/".$name.".".$this->templateExtension;
+      if (file_exists($filename)) {
+        return $this->renderFile($filename, $context);
+      } else {
+        return "";
+      }
     }
   }
 
@@ -259,6 +264,7 @@ class Proust implements \ArrayAccess {
       }
     }
   }
+  
 
   /* evaluates a compiled template, along with the given context. */
   public function evalTemplate($f, $context = null) {
