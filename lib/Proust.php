@@ -342,6 +342,7 @@ class Proust implements \ArrayAccess {
     return $php;
   }
 
+  /* Compiles the given methods to a class, looking up partials as needed. */
   public function compileClass($name, $methods) {
     $compilerOptions = $this->compilerOptions;
     $compilerOptions["proust"] = $this;
