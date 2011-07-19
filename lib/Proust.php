@@ -251,6 +251,15 @@ class Proust implements \ArrayAccess {
     }
   }
 
+  /* returns true if the partial is a file. */
+  public function isPartialStatic($name) {
+    if (array_key_exists($name, $this->partials)) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+  
   /* get the content of a partial. */
   public function getPartial($name) {
     if (array_key_exists($name, $this->partials)) {
