@@ -16,17 +16,20 @@ require_once('lib/Proust.php');
 
 function usage() {
   print "Usage:\n\n";
-  print " Proust.php [-o outputfile] [-p partialDir] [-i] [-e] [-t] [-h] [-j json] -- inputfiles...\n\n";
+  print " Proust.php [-o outputfile] [-p partialDir] [-i] [-e] [-t] [-h] [-j file] [-J json][COMPILER_OPTIONS]-- inputfiles...\n\n";
   print "   -o outputfile : store php in this file\n";
   print "   -t            : print token array\n";
   print "   -h            : this information\n";
   print "   -p path       : set template path\n";
   print "   -e            : evaluate templates\n";
-  print "   -j json       : parse json file and pass as context to evaluation\n";
+  print "   -j file       : parse json file and pass as context to evaluation\n";
+  print "   -J json       : parse json on command line and pass as context to evaluation\n";
   print "   -c name       : compile to class name\n";
+  print "\nCOMPILER OPTIONS:\n";
   print "   --disable-lambdas : disable lambdas for compilation\n";
   print "   --disable-indentation : disable indentation for compilation\n";
   print "   --include-partials : include partials directly as code\n";
+  print "   --include-dynamic-partials : include dynamic partials directly as code (dangerous with caching)\n";
   print "   --beautify     : beautify generated code\n";
 }
 
@@ -59,7 +62,7 @@ if (defined('STDIN')) {
     }
   }
   
-  $res = $o->getopt($argv, 'o:thp:ej:c:', array("disable-lambdas", "disable-indentation", "include-partials", "beautify"));
+  $res = $o->getopt($argv, 'o:thp:ej:J:c:', array("disable-lambdas", "disable-indentation", "include-partials", "include-dynamic-partials", "beautify"));
   $opts = array();
   if (is_a($res, "PEAR_error")) {
     usage();
@@ -80,6 +83,10 @@ if (defined('STDIN')) {
     $context = json_decode(file_get_contents(_getopt($opts, "j")));
   }
 
+  if (_getopt($opts, "J")) {
+    $context = json_decode($opts["J"]);
+  }
+  
   $files = $res[1];
   $options = array("enableCache" => false);
   $compilerOptions = array();
@@ -91,6 +98,9 @@ if (defined('STDIN')) {
   }
   if (_getopt($opts, "--disable-indentation")) {
     $compilerOptions["disableIndentation"] = true;
+  }
+  if (_getopt($opts, "--include-dynamic-partials")) {
+    $compilerOptions["includeDynamicPartials"] = true;
   }
   if (_getopt($opts, "--beautify")) {
     $compilerOptions["beautify"] = true;
@@ -104,7 +114,12 @@ if (defined('STDIN')) {
   $methods = array();
   $code = "";
   foreach ($files as $file) {
-    $tpl = file_get_contents($file);
+    if ($file === "-") {
+      $tpl = file_get_contents("php://stdin");
+      $file = 'STDIN';
+    } else {
+      $tpl = file_get_contents($file);
+    }
 
     if (_getopt($opts, "c")) {
       /* store method name and code */
