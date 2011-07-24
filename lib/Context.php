@@ -159,7 +159,6 @@ class Context implements \ArrayAccess {
       }
     }
 
-
     if ($found) {
       /* evaluate the lambda directly if it is a tag. */
       if (is_callable($res) && $evalDirectly) {

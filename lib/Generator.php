@@ -454,7 +454,7 @@ if (is_callable(\$v)) {
   public function on_inverted_section($name, $content) {
     $code = $this->subCompile($content);
     $name = self::escape($name);
-    $this->pushLine("/* inverted section $name */\n\$v = \$ctx['$name']; if (!\$v && (\$v !== 0)) { $code }\n");
+    $this->pushLine("/* inverted section $name */\n\$v = \$ctx['$name']; if (!\$v) { $code }\n");
   }
 
   public function on_when_section($name, $content) {

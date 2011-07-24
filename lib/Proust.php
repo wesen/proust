@@ -240,15 +240,16 @@ class Proust implements \ArrayAccess {
    **/
   public function renderPartial($name, $context = null) {
     if (array_key_exists($name, $this->partials)) {
-      return $this->render($this->partials[$name], $context);
+      $res = $this->render($this->partials[$name], $context);
     } else {
       $filename = $this->templatePath."/".$name.".".$this->templateExtension;
       if (file_exists($filename)) {
-        return $this->renderFile($filename, $context);
+        $res = $this->renderFile($filename, $context);
       } else {
-        return "";
+        $res = "";
       }
     }
+    return $res;
   }
 
   /* returns true if the partial is a file. */
