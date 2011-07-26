@@ -3,7 +3,7 @@
 	url = https://github.com/wesen/php-simpletest.git
 [submodule "spec"]
 	path = spec
-	url = git://github.com/wesen/spec.git
+	url = https://github.com/wesen/spec.git
 [submodule "vendor/yaml"]
 	path = vendor/yaml
 	url = https://github.com/fabpot/yaml
