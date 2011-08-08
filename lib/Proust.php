@@ -121,7 +121,7 @@ class Proust implements \ArrayAccess {
       include($cachefile);
     } else {
       $php = $this->compile($code, $context);
-      file_put_contents($cachefile, "<? $php ?>");
+      file_put_contents($cachefile, "<?php $php ?>");
       eval($php);
     }
 
@@ -149,7 +149,7 @@ class Proust implements \ArrayAccess {
       include($cachefile);
     } else {
       $php = $this->compileFile($filename, $context);
-      file_put_contents($cachefile, "<? $php ?>");
+      file_put_contents($cachefile, "<?php $php ?>");
       eval($php);
     }
     $this->codeCache[$name] = $f;
