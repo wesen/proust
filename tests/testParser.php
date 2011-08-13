@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Proust - Mustache PHP Compiler - Test the Parser class
  *

@@ -6,6 +6,8 @@
  * (c) July 2011 - Manuel Odendahl - wesen@ruinwesen.com
  */
 
+namespace Proust;
+
 $DEBUG = array();
 //array_push($DEBUG, 'PARSER');
 //array_push($DEBUG, 'SCANNER');
