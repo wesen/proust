@@ -274,6 +274,20 @@ class Proust implements \ArrayAccess {
       }
     }
   }
+
+  /* get the filename of a partial. */
+  public function getPartialFilename($name) {
+    if (array_key_exists($name, $this->partials)) {
+      return null;
+    } else {
+      $filename = $this->templatePath."/".$name.".".$this->templateExtension;
+      if (file_exists($filename)) {
+        return $filename;
+      } else {
+        return null;
+      }
+    }
+  }
   
 
   /* evaluates a compiled template, along with the given context. */
