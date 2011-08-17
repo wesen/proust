@@ -243,9 +243,6 @@ class Generator extends TokenWalker {
   /* Compile the code with the given options */
   public function compileCode($code, $options = array()) {
     $tokens = $this->getTokens($code);
-    if ($tokens === array(":multi")) {
-      return "";
-    }
     return $this->compile($tokens, $code, $options);
   }
 
