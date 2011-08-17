@@ -15,7 +15,6 @@
 
 namespace Proust;
 
-
 class Template {
   public function __construct($proust = null) {
     if ($proust === null) {
@@ -187,6 +186,7 @@ class Generator extends TokenWalker {
                                   "newlineFunction" => "\$ctx->newline()",
                                   "beautify" => false,
                                   "proust" => null,
+                                  "warnOnKeywords" => false,
                                   "errorOnUnhandled" => true);
   public $proust = null;
   public $includeDynamicPartials = false;
@@ -194,6 +194,19 @@ class Generator extends TokenWalker {
   public $disableLambdas = false;
   public $disableObject = false;
 
+  static $warnOnKeywords = false;
+
+  static $PHP_KEYWORDS = array("abstract", "and", "array", "as", "break",
+                               "case", "catch", "cfunction", "class", "clone", "const", "continue", "declare", "default", "do",
+                               "else", "elseif", "enddeclare", "endfor", "endforeach", "endif", "endswitch", "endwhile", "extends", "final",
+                               "for", "foreach", "function", "global", "goto", "if", "implements", "interface", "instanceof", "namespace", "new",
+                               "old_function", "or", "private", "protected", "public", "static", "switch", "throw", "try", "use", "var", "while", "xor",
+                               "__CLASS__", "__DIR__", "__FILE__", "__FUNCTION__", "__METHOD__", "__NAMESPACE__",
+                               "die", "echo", "empty", "exit", "eval", "include", "include_once", "isset", "list", "require", "require_once",
+                               "return", "print", "unset");
+  
+
+  
   /***************************************************************************
    *
    * Helper functions
@@ -207,6 +220,12 @@ class Generator extends TokenWalker {
 
   public static function functionName($name) {
     $name = preg_replace('/[^a-zA-Z0-9]/', '_', $name);
+    if (in_array($name, self::$PHP_KEYWORDS)) {
+      if (self::$warnOnKeywords) {
+        trigger_error("Trying to use \"$name\" as function name, which is a php keyword, replacing with \"__$name\".", E_USER_WARNING);
+      }
+      return "__$name";
+    }
     return $name;
   }
 
@@ -231,6 +250,9 @@ class Generator extends TokenWalker {
       $this->newlineFunction = 'echo("\n")';
     }
 
+    if ($this->warnOnKeywords) {
+      self::$warnOnKeywords = true;
+    }
   }
 
   /** Parse $code into a token array. **/
@@ -340,11 +362,11 @@ class Generator extends TokenWalker {
       break;
       
     case "function":
-      $res = "function ".$options["name"]." (\$ctx) { ".$compiledCodeCapture." };";
+      $res = "function ".self::functionName($options["name"])." (\$ctx) { ".$compiledCodeCapture." };";
       break;
       
     case "method":
-      $res = "function ".$options["name"]." (\$data = null) {\n".
+      $res = "function ".self::functionName($options["name"])."(\$data = null) {\n".
         "  \$ctx = \$this->context; if (\$data !== null) { \$ctx->reset(\$data); }\n".
         "  ".$compiledCodeCapture."\n".
         "}\n";
