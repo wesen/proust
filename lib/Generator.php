@@ -194,7 +194,7 @@ class Generator extends TokenWalker {
   public $disableLambdas = false;
   public $disableObject = false;
 
-  static $warnOnKeywords = false;
+  static $__warnOnKeywords = false;
 
   static $PHP_KEYWORDS = array("abstract", "and", "array", "as", "break",
                                "case", "catch", "cfunction", "class", "clone", "const", "continue", "declare", "default", "do",
@@ -221,7 +221,7 @@ class Generator extends TokenWalker {
   public static function functionName($name) {
     $name = preg_replace('/[^a-zA-Z0-9]/', '_', $name);
     if (in_array($name, self::$PHP_KEYWORDS)) {
-      if (self::$warnOnKeywords) {
+      if (self::$__warnOnKeywords) {
         trigger_error("Trying to use \"$name\" as function name, which is a php keyword, replacing with \"__$name\".", E_USER_WARNING);
       }
       return "__$name";
@@ -251,7 +251,7 @@ class Generator extends TokenWalker {
     }
 
     if ($this->warnOnKeywords) {
-      self::$warnOnKeywords = true;
+      self::$__warnOnKeywords = true;
     }
   }
 
