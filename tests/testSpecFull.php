@@ -9,7 +9,7 @@ require_once(dirname(__FILE__)."/../vendor/simpletest/autorun.php");
 require_once(dirname(__FILE__)."/../Proust.php");
 require_once(dirname(__FILE__)."/../vendor/yaml/lib/sfYamlParser.php");
 
-
+error_reporting(E_WARNING | E_ERROR);
 
 define('SPEC_DIR', dirname(__FILE__)."/../spec/specs/");
 
@@ -60,7 +60,10 @@ class TestSpec extends UnitTestCase {
         $name = preg_replace('/[^a-zA-Z0-9]/', '_', $name);
         $test["method_name"] = "$name"."_".$i;
 
-        array_push($methods, array($test["method_name"], $test["template"]));
+        /* skip class methods with partials */
+        if (!isset($test["partials"])) {
+          array_push($methods, array($test["method_name"], $test["template"]));
+        }
         $this->tests[$name."_$i"] = $test;
         $i++;
       }
@@ -68,6 +71,7 @@ class TestSpec extends UnitTestCase {
     }
 
     $classCode = $m->compileClass("Specs", $methods);
+    file_put_contents("/tmp/class.php", $classCode);
     eval($classCode);
     $m = new Proust\Proust(array("enableCache" => false));
     $this->obj = new Specs($m);
@@ -92,16 +96,20 @@ class TestSpec extends UnitTestCase {
       $this->obj->proust->partials = $test["partials"];
     }
 
-    $res = $this->obj->$methodName($test["data"]);
-    $info = "CLASS CALLING";
-    
-    $msg = "$info\nSpecification error: ".$test["desc"]."\n".
-      "Got :\n------\n*".print_r($res, true)."*\n------\n".
-      "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
-      "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n";
-    $msg = str_replace('%', '%%', $msg);
-    
-    $this->assertEqual($res, $test["expected"], $msg);
+    if (method_exists($this->obj, $methodName)) {
+        $res = $this->obj->$methodName($test["data"]);
+        $info = "CLASS CALLING";
+        
+        $msg = "$info\nSpecification error: ".$test["desc"]."\n".
+          "Got :\n------\n*".print_r($res, true)."*\n------\n".
+          "Expected :\n------\n*".print_r($test["expected"], true)."*\n------\n".
+          "Template: \n------\n*".print_r($test["template"], true)."*\n-------\n";
+        $msg = str_replace('%', '%%', $msg);
+        
+        $this->assertEqual($res, $test["expected"], $msg);
+    } else {
+      error_log("skipping $methodName with partials in CLASS CALLING mode");
+    }
     $this->tearDown();
   }
   
