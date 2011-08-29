@@ -40,9 +40,10 @@ class Proust implements \ArrayAccess {
                       "disableObjects" => false,
                       "partials" => array(),
                       "compilerOptions" => array());
+
     $options = array_merge($defaults, $options);
     object_set_options($this, $options, array_keys($defaults));
-    
+
     if ($this->cacheDir == null) {
       $this->cacheDir = $this->templatePath."/.proust_cache";
     }
@@ -100,7 +101,7 @@ class Proust implements \ArrayAccess {
     $name = "code ".sha1($code)." ".$this->getTagString($context);
     return $name;
   }
-    
+
   /* cache a code string, along with context information. Returns the evaluated function.. */
   public function getCachedCode($code, $context) {
     $name = $this->getCodeCacheKey($code, $context);
@@ -177,14 +178,14 @@ class Proust implements \ArrayAccess {
       } else {
         $this->context = new Context($this);
       }
-    } 
+    }
     return $this->context;
   }
 
   public function resetContext() {
     $this->context = null;
   }
-  
+
   /***************************************************************************
    *
    * Proust methods
@@ -233,7 +234,7 @@ class Proust implements \ArrayAccess {
   public function getFileFunction($filename, $context = null) {
     return $this->getCachedFile($filename, $context);
   }
-  
+
   /**
    * Override this in your subclass if you want to do fun things like
    * reading templates from a database.
@@ -260,7 +261,7 @@ class Proust implements \ArrayAccess {
       return true;
     }
   }
-  
+
   /* get the content of a partial. */
   public function getPartial($name) {
     if (array_key_exists($name, $this->partials)) {
@@ -288,12 +289,12 @@ class Proust implements \ArrayAccess {
       }
     }
   }
-  
+
 
   /* evaluates a compiled template, along with the given context. */
   public function evalTemplate($f, $context = null) {
     $ctx = $this->getContext();
-    
+
     if ($context == null) {
       return $f($ctx);
     } else {
@@ -357,7 +358,7 @@ class Proust implements \ArrayAccess {
     if (array_key_exists($name, $this->phpCache)) {
       return $this->phpCache[$name];
     }
-    
+
     $compilerOptions = $this->compilerOptions;
     $compilerOptions["proust"] = $this;
 
@@ -403,7 +404,7 @@ class Proust implements \ArrayAccess {
 
   function offsetUnset ( $offset ) {
     return $this->getContext()->offsetUnSet($offset, $value);
-  }  
+  }
 
 }
 
