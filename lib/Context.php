@@ -161,7 +161,7 @@ class Context implements \ArrayAccess {
 
     if ($found) {
       /* evaluate the lambda directly if it is a tag. */
-      if (is_callable($res) && $evalDirectly) {
+      if ((is_object($res) && ($res instanceof Closure)) && $evalDirectly) {
         // temporarily reset to default delimiters for immediate lambda return
         $ctag = $this->ctag;
         $otag = $this->otag;
@@ -308,7 +308,7 @@ class Context implements \ArrayAccess {
   }
 
   function offsetUnset ( $offset ) {
-    throw new Exception("Can't remove from Context, use pop() instead");
+    throw new \Exception("Can't remove from Context, use pop() instead");
   }  
 };
 
