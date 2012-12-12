@@ -7,11 +7,11 @@
     <orderEntry type="module-library">
       <library name="PHP">
         <CLASSES>
-          <root url="file:///usr/local/Cellar/php54/5.4.3/lib/php" />
+          <root url="file:///usr/local/Cellar/php53/5.3.14/lib/php" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="file:///usr/local/Cellar/php54/5.4.3/lib/php" />
+          <root url="file:///usr/local/Cellar/php53/5.3.14/lib/php" />
         </SOURCES>
       </library>
     </orderEntry>
