@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <title>Proust by wesen</title>
+  </head>
+
+  <body>
+    <div id="container">
+      <div class="inner">
+
+        <header>
+          <h1>Proust</h1>
+          <h2>Compiling implementation of mustache</h2>
+        </header>
+
+        <section id="downloads" class="clearfix">
+          <a href="https://github.com/wesen/proust/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
+          <a href="https://github.com/wesen/proust/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
+          <a href="https://github.com/wesen/proust" id="view-on-github" class="button"><span>View on GitHub</span></a>
+        </section>
+
+        <hr>
+
+        <section id="main_content">
+          <h1>Proust - Mustache template compiler for PHP</h1>
+
+<p>Proust is a PHP compiler for <a href="http://mustache.github.com/">mustache</a>
+templates. It started as a port of the Ruby compiler for mustache
+templates, but was further extended for mustache v1.1.2 spec
+compliance and PHP-specific extensions. It also allows a number of
+compiler parameters to customize and optimize compiled templates.</p>
+
+<p>Proust also comes with a port of the Ruby StringScanner object which
+could prove useful on its own.</p>
+
+<h2>Overview</h2>
+
+<p>Proust takes mustache templates as input (either one or more
+templates, either as strings or as templates), and generates PHP code
+for them. Partials can be passed dynamically or by using a template
+directory which the compiler will use to look them up. The compiled
+code can be cached dynamically and on disk by writing out php files.</p>
+
+<h2>Quick example</h2>
+
+<p>A quick example:</p>
+
+<div class="highlight"><pre><span class="o">&lt;?</span><span class="nx">php</span>
+
+<span class="cm">/* simple hello world */</span>
+
+<span class="k">require_once</span><span class="p">(</span><span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/../Proust.php"</span><span class="p">);</span>
+
+<span class="nv">$p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Proust\Proust</span><span class="p">();</span>
+<span class="k">echo</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">render</span><span class="p">(</span><span class="s2">"Hello {{planet}}</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="k">array</span><span class="p">(</span><span class="s2">"planet"</span> <span class="o">=&gt;</span> <span class="s2">"World"</span><span class="p">));</span>
+
+<span class="cp">?&gt;</span><span class="x"></span>
+</pre></div>
+
+<h2>Mustache template</h2>
+
+<p>The canonical Mustache template, with a php class:</p>
+
+<div class="highlight"><pre><span class="o">&lt;?</span><span class="nx">php</span>
+
+<span class="cm">/* canonical mustache template */</span>
+
+<span class="k">require_once</span><span class="p">(</span><span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/../Proust.php"</span><span class="p">);</span>
+
+<span class="nv">$p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Proust\Proust</span><span class="p">();</span>
+
+<span class="nv">$tpl</span> <span class="o">=&lt;&lt;&lt;</span><span class="s1">'EOD'</span>
+<span class="nx">Hello</span> <span class="p">{{</span><span class="nx">name</span><span class="p">}}</span>
+<span class="nx">You</span> <span class="nx">have</span> <span class="nx">just</span> <span class="nx">won</span> <span class="err">$</span><span class="p">{{</span><span class="nx">value</span><span class="p">}}</span><span class="o">!</span>
+<span class="p">{{</span><span class="c1">#in_ca}}</span>
+<span class="nx">Well</span><span class="p">,</span> <span class="err">$</span><span class="p">{{</span><span class="nx">taxed_value</span><span class="p">}},</span> <span class="nx">after</span> <span class="nx">taxes</span><span class="o">.</span>
+<span class="p">{{</span><span class="o">/</span><span class="nx">in_ca</span><span class="p">}}</span>
+
+<span class="nx">EOD</span><span class="p">;</span>
+
+<span class="k">class</span> <span class="nc">Chris</span> <span class="p">{</span>
+  <span class="k">public</span> <span class="nv">$name</span> <span class="o">=</span> <span class="s2">"Chris"</span><span class="p">;</span>
+  <span class="k">public</span> <span class="nv">$value</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">;</span>
+  <span class="k">public</span> <span class="nv">$in_ca</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+
+  <span class="k">public</span> <span class="k">function</span> <span class="nf">taxed_value</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">value</span> <span class="o">-</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">value</span> <span class="o">*</span> <span class="mf">0.4</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">echo</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">render</span><span class="p">(</span><span class="nv">$tpl</span><span class="p">,</span> <span class="k">new</span> <span class="nx">Chris</span><span class="p">());</span>
+
+<span class="cp">?&gt;</span><span class="x"></span>
+</pre></div>
+
+<h2>Proust options</h2>
+
+<p>Now on to the more compiler specific aspects of Proust. Proust can
+cache the output of the compiler in a cache directory. These files can
+later be reused by including their contents. Proust does this
+automatically when caching is enabled. It recompiles templates when
+the original template file is newer than the cached version. It also
+hashes the compiler options and ctag and otag to avoid conflicts.</p>
+
+<p>This example also shows the multiple compiler options:</p>
+
+<ul>
+<li>
+<em>disableObjects</em> - disable the possibility to use objects (and their
+methods and variables) at runtime. Makes for a slightly quicker
+context lookup. This is not a compiler option, but rather a runtime
+option.</li>
+<li>
+<em>disableLambdas</em> - don't allow for lambdas (or object methods) on
+the context stack. Makes the resulting code smaller and slightly
+quicker.</li>
+<li>
+<em>disableIndentation</em> - don't indent partials (which is not necessary
+for HTML for example). Makes for faster output, as there is no need
+to keep track of the indentation level, and plain "echo" can be
+used.</li>
+<li>
+<em>includePartialCode</em> - include partial code directly where a partial
+is called. Makes for faster (and bigger) code.</li>
+</ul><div class="highlight"><pre><span class="o">&lt;?</span><span class="nx">php</span>
+
+<span class="cm">/* example with partials, caching and some compiler options */</span>
+
+<span class="k">require_once</span><span class="p">(</span><span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/../Proust.php"</span><span class="p">);</span>
+
+<span class="nv">$p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Proust\Proust</span><span class="p">(</span><span class="k">array</span><span class="p">(</span><span class="s2">"enableCache"</span> <span class="o">=&gt;</span> <span class="k">true</span><span class="p">,</span>
+                             <span class="s2">"cacheDir"</span> <span class="o">=&gt;</span> <span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/.proust.cache/"</span><span class="p">,</span>
+                             <span class="s2">"templatePath"</span> <span class="o">=&gt;</span> <span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/templates/"</span><span class="p">,</span>
+                             <span class="s2">"disableObjects"</span> <span class="o">=&gt;</span> <span class="s2">"true"</span><span class="p">,</span>
+                             <span class="s2">"compilerOptions"</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="s2">"disableLambdas"</span> <span class="o">=&gt;</span> <span class="k">true</span><span class="p">,</span>
+                                                        <span class="c1">// "disableIndentation" =&gt; true,</span>
+                                                        <span class="s2">"includePartialCode"</span> <span class="o">=&gt;</span> <span class="k">true</span>
+                                                        <span class="p">)));</span>
+
+<span class="nv">$data</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">"foo"</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="s2">"x"</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span>
+                             <span class="s2">"y"</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span>
+                             <span class="s2">"z"</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)));</span>
+<span class="k">echo</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">renderTemplate</span><span class="p">(</span><span class="s2">"section1"</span><span class="p">,</span> <span class="nv">$data</span><span class="p">);</span>
+
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">Indentation disabled:</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+
+<span class="nv">$p</span><span class="o">-&gt;</span><span class="na">compilerOptions</span><span class="p">[</span><span class="s2">"disableIndentation"</span><span class="p">]</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+<span class="k">echo</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">renderTemplate</span><span class="p">(</span><span class="s2">"section1"</span><span class="p">,</span> <span class="nv">$data</span><span class="p">);</span>
+
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">With explicit partials:</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="nv">$p</span><span class="o">-&gt;</span><span class="na">compilerOptions</span><span class="p">[</span><span class="s2">"disableIndentation"</span><span class="p">]</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
+<span class="nv">$p</span><span class="o">-&gt;</span><span class="na">partials</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">"partial2"</span> <span class="o">=&gt;</span> <span class="s2">"{{foo.y}}"</span><span class="p">);</span>
+<span class="k">echo</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">renderTemplate</span><span class="p">(</span><span class="s2">"section1"</span><span class="p">,</span> <span class="nv">$data</span><span class="p">);</span>
+
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">Show caching in effect:</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="nv">$p</span><span class="o">-&gt;</span><span class="na">partials</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">"partial2"</span> <span class="o">=&gt;</span> <span class="s2">"NEW VERSION: {{foo.y}}"</span><span class="p">);</span>
+<span class="k">echo</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">renderTemplate</span><span class="p">(</span><span class="s2">"section1"</span><span class="p">,</span> <span class="nv">$data</span><span class="p">);</span>
+
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">After clearCache:</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="nv">$p</span><span class="o">-&gt;</span><span class="na">clearCache</span><span class="p">();</span>
+<span class="k">echo</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">renderTemplate</span><span class="p">(</span><span class="s2">"section1"</span><span class="p">,</span> <span class="nv">$data</span><span class="p">);</span>
+
+<span class="cp">?&gt;</span><span class="x"></span>
+</pre></div>
+
+<h2>Tokenized output</h2>
+
+<p>To get a glimpse at the compilation results, you can use the getTokens
+(with their variants getTemplateTokens and getFileTokens), as well as
+the compile (and compileTemplate and compileFile) methods.</p>
+
+<div class="highlight"><pre><span class="o">&lt;?</span><span class="nx">php</span>
+
+<span class="cm">/* get code tokens */</span>
+
+<span class="k">require_once</span><span class="p">(</span><span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/../Proust.php"</span><span class="p">);</span>
+
+<span class="nv">$p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Proust\Proust</span><span class="p">(</span><span class="k">array</span><span class="p">(</span><span class="s2">"templatePath"</span> <span class="o">=&gt;</span> <span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/templates/"</span><span class="p">));</span>
+<span class="nv">$p</span><span class="o">-&gt;</span><span class="na">partials</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">"partial"</span> <span class="o">=&gt;</span> <span class="s2">"{{#section}}{{bla}}{{/section}}"</span><span class="p">);</span>
+
+<span class="nv">$tpl</span> <span class="o">=&lt;&lt;&lt;</span><span class="s1">'EOT'</span>
+<span class="p">{{</span><span class="c1">#foo}}{{bla}}{{/foo}}</span>
+<span class="p">{{</span><span class="o">&gt;</span><span class="nx">partial</span><span class="p">}}</span>
+<span class="nx">EOT</span><span class="p">;</span>
+
+<span class="k">echo</span> <span class="s2">"Tokens:</span><span class="se">\n</span><span class="s2">-------</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="nb">var_dump</span><span class="p">(</span><span class="nv">$p</span><span class="o">-&gt;</span><span class="na">getTokens</span><span class="p">(</span><span class="nv">$tpl</span><span class="p">));</span>
+
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">Template tokens:</span><span class="se">\n</span><span class="s2">----------------</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="nb">var_dump</span><span class="p">(</span><span class="nv">$p</span><span class="o">-&gt;</span><span class="na">getTemplateTokens</span><span class="p">(</span><span class="s2">"section1"</span><span class="p">));</span>
+
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">File tokens:</span><span class="se">\n</span><span class="s2">----------------</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="nb">var_dump</span><span class="p">(</span><span class="nv">$p</span><span class="o">-&gt;</span><span class="na">getFileTokens</span><span class="p">(</span><span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/templates/partial.mustache"</span><span class="p">));</span>
+
+<span class="cp">?&gt;</span><span class="x"></span>
+</pre></div>
+
+<h2>Compiler output</h2>
+
+<p>The compiler output can be beautified by installing the PHP_Beautifyer
+PEAR extension, and setting the compiler option "beautify" to
+true. This is not entirely tested, and is a bit brittle (it happened
+to break a huge class compilation, but that has been "avoided" for now).</p>
+
+<div class="highlight"><pre><span class="o">&lt;?</span><span class="nx">php</span>
+
+<span class="cm">/* compile some templates */</span>
+
+<span class="k">require_once</span><span class="p">(</span><span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/../Proust.php"</span><span class="p">);</span>
+
+<span class="nv">$p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Proust\Proust</span><span class="p">(</span><span class="k">array</span><span class="p">(</span><span class="s2">"templatePath"</span> <span class="o">=&gt;</span> <span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/templates/"</span><span class="p">));</span>
+<span class="nv">$p</span><span class="o">-&gt;</span><span class="na">partials</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">"partial"</span> <span class="o">=&gt;</span> <span class="s2">"{{#section}}{{bla}}{{/section}}"</span><span class="p">);</span>
+
+<span class="nv">$tpl</span> <span class="o">=&lt;&lt;&lt;</span><span class="s1">'EOT'</span>
+<span class="p">{{</span><span class="c1">#foo}}{{bla}}{{/foo}}</span>
+<span class="p">{{</span><span class="o">&gt;</span><span class="nx">partial</span><span class="p">}}</span>
+<span class="nx">EOT</span><span class="p">;</span>
+
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n\n</span><span class="s2">Code:</span><span class="se">\n</span><span class="s2">-----</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="k">echo</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">compile</span><span class="p">(</span><span class="nv">$tpl</span><span class="p">);</span>
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+
+<span class="nv">$p</span><span class="o">-&gt;</span><span class="na">compilerOptions</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">"includePartialCode"</span> <span class="o">=&gt;</span> <span class="k">true</span><span class="p">);</span>
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n\n</span><span class="s2">Code with included partials:</span><span class="se">\n</span><span class="s2">----------------------------</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="k">echo</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">compile</span><span class="p">(</span><span class="nv">$tpl</span><span class="p">);</span>
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+
+<span class="nv">$p</span><span class="o">-&gt;</span><span class="na">compilerOptions</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">"disableLambdas"</span> <span class="o">=&gt;</span> <span class="k">true</span><span class="p">);</span>
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n\n</span><span class="s2">Code with disabled lambdas:</span><span class="se">\n</span><span class="s2">---------------------------</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="k">echo</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">compile</span><span class="p">(</span><span class="nv">$tpl</span><span class="p">);</span>
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+
+<span class="nv">$p</span><span class="o">-&gt;</span><span class="na">compilerOptions</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">"disableIndentation"</span> <span class="o">=&gt;</span> <span class="k">true</span><span class="p">);</span>
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n\n</span><span class="s2">Code with disabled indentation:</span><span class="se">\n</span><span class="s2">-------------------------------</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="k">echo</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">compile</span><span class="p">(</span><span class="nv">$tpl</span><span class="p">);</span>
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="cp">?&gt;</span><span class="x"></span>
+</pre></div>
+
+<h2>Class Generation</h2>
+
+<p>Proust can also generate a class from templates and partials. The
+class can then be used to render the templates (one method per
+template or partial.</p>
+
+<div class="highlight"><pre><span class="o">&lt;?</span><span class="nx">php</span>
+
+<span class="cm">/* render and call a template class */</span>
+
+<span class="k">require_once</span><span class="p">(</span><span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/../Proust.php"</span><span class="p">);</span>
+
+<span class="nv">$p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Proust\Proust</span><span class="p">(</span><span class="k">array</span><span class="p">(</span><span class="s2">"templatePath"</span> <span class="o">=&gt;</span> <span class="nb">dirname</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">)</span><span class="o">.</span><span class="s2">"/templates/"</span><span class="p">,</span>
+                             <span class="s2">"compilerOptions"</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="s2">"beautify"</span> <span class="o">=&gt;</span> <span class="k">true</span><span class="p">)));</span>
+<span class="nv">$p</span><span class="o">-&gt;</span><span class="na">partials</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">"partial"</span> <span class="o">=&gt;</span> <span class="s2">"{{#section}}{{bla}}{{/section}}</span><span class="se">\n</span><span class="s2">"</span><span class="p">);</span>
+
+<span class="nv">$tpl</span> <span class="o">=&lt;&lt;&lt;</span><span class="s1">'EOT'</span>
+<span class="p">{{</span><span class="c1">#foo}}{{bla}}{{/foo}}</span>
+<span class="p">{{</span><span class="o">&gt;</span><span class="nx">partial</span><span class="p">}}</span>
+<span class="nx">EOT</span><span class="p">;</span>
+
+<span class="nv">$tpl2</span> <span class="o">=&lt;&lt;&lt;</span><span class="s1">'EOT'</span>
+<span class="p">{{</span><span class="c1">#foo}}{{&gt;section1}}{{/foo}}</span>
+<span class="nx">EOT</span><span class="p">;</span>
+
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n\n</span><span class="s2">Class:</span><span class="se">\n</span><span class="s2">-----</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="nv">$code</span> <span class="o">=</span> <span class="nv">$p</span><span class="o">-&gt;</span><span class="na">compileClass</span><span class="p">(</span><span class="s2">"TestClass"</span><span class="p">,</span> <span class="k">array</span><span class="p">(</span><span class="k">array</span><span class="p">(</span><span class="s2">"main"</span><span class="p">,</span> <span class="nv">$tpl</span><span class="p">),</span>
+                                            <span class="k">array</span><span class="p">(</span><span class="s2">"foobar"</span><span class="p">,</span> <span class="nv">$tpl2</span><span class="p">)));</span>
+<span class="k">echo</span> <span class="nv">$code</span><span class="p">;</span>
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+
+<span class="k">eval</span><span class="p">(</span><span class="nv">$code</span><span class="p">);</span>
+
+<span class="nv">$test</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">TestClass</span><span class="p">(</span><span class="nv">$p</span><span class="p">);</span>
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n\n</span><span class="s2">Method main():</span><span class="se">\n</span><span class="s2">---------------</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="k">echo</span> <span class="nv">$test</span><span class="o">-&gt;</span><span class="na">main</span><span class="p">(</span><span class="k">array</span><span class="p">(</span><span class="s2">"foo"</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="s2">"bla"</span> <span class="o">=&gt;</span> <span class="s2">"Hello world"</span><span class="p">),</span>
+                       <span class="s2">"section"</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="s2">"bla"</span> <span class="o">=&gt;</span> <span class="s2">"Partial hello world"</span><span class="p">)));</span>
+
+<span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n\n</span><span class="s2">Method foobar():</span><span class="se">\n</span><span class="s2">----------------</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="k">echo</span> <span class="nv">$test</span><span class="o">-&gt;</span><span class="na">foobar</span><span class="p">(</span><span class="k">array</span><span class="p">(</span><span class="s2">"foo"</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="s2">"x"</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span>
+                                        <span class="s2">"y"</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span>
+                                        <span class="s2">"z"</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)),</span>
+                         <span class="s2">"section"</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="s2">"bla"</span> <span class="o">=&gt;</span> <span class="s2">"Partial hello world"</span><span class="p">)));</span>
+
+
+<span class="cp">?&gt;</span><span class="x"></span>
+</pre></div>
+
+<h2>Command line interface</h2>
+
+<p>Proust comes with a command line interface to compile and inspect
+mustache templates.</p>
+
+<pre><code>$ php Proust.php  -h
+Usage:
+
+ Proust.php [-o outputfile] [-p partialDir] [-i] [-e] [-t] [-h] [-j json] -- inputfiles...
+
+   -o outputfile : store php in this file
+   -t            : print token array
+   -h            : this information
+   -p path       : set template path
+   -e            : evaluate templates
+   -j json       : parse json file and pass as context to evaluation
+   -c name       : compile to class name
+   --disable-lambdas : disable lambdas for compilation
+   --disable-indentation : disable indentation for compilation
+   --include-partials : include partials directly as code
+   --beautify     : beautify generated code
+</code></pre>
+
+<h2>Known Issues</h2>
+
+<ul>
+<li>Beware of caching and the compiler option "includePartialCode". When
+partials are changed, the compiled code won't be updated, and still
+contain the all partials. If you want to include dynamic partials as
+well (even more volatile), please set the compiler options
+"includeDynamicPartials" to true.</li>
+</ul><h2>See Also</h2>
+
+<ul>
+<li><a href="https://github.com/mustache/spec">mustache specification</a></li>
+<li>
+<a href="http://github.com/defunkt/mustache/blob/master/README.md">Readme for the Ruby Mustache implementation</a>.</li>
+<li>
+<a href="http://mustache.github.com/mustache.1.html">mustache(1)</a> and <a href="http://mustache.github.com/mustache.5.html">mustache(5)</a> man pages.</li>
+</ul>
+        </section>
+
+        <footer>
+          Proust is maintained by <a href="https://github.com/wesen">wesen</a><br>
+          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.
+        </footer>
+
+        
+      </div>
+    </div>
+  </body>
+</html>
