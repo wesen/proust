@@ -456,7 +456,7 @@ $iterationSection
     } else {
       $res = "/* section $name */
 \$v = \$ctx['$name'];
-if (is_callable(\$v)) {
+if (is_callable(\$v) && \$v instanceof Closure) {
   Proust\\Context::PushContext(\$ctx);
   ".$this->outputFunction."(\$ctx->render(\$v(substr(end(\$src), $start, $len))));
   Proust\\Context::PopContext(\$ctx);
