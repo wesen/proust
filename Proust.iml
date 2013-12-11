@@ -4,6 +4,30 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library">
+      <library name="PHP">
+        <CLASSES>
+          <root url="file:///usr/local/Cellar/phpunit/3.7.22/libexec" />
+          <root url="file:///usr/local/bin/php" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file:///usr/local/Cellar/phpunit/3.7.22/libexec" />
+          <root url="file:///usr/local/bin/php" />
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library name="PHARS">
+        <CLASSES>
+          <root url="phar:///usr/local/Cellar/phpunit/3.7.22/libexec/phpunit-3.7.22.phar" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="phar:///usr/local/Cellar/phpunit/3.7.22/libexec/phpunit-3.7.22.phar" />
+        </SOURCES>
+      </library>
+    </orderEntry>
   </component>
 </module>
 
