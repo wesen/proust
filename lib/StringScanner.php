@@ -12,7 +12,7 @@ class StringScannerException extends Exception {
 };
 
 class StringScanner implements \ArrayAccess {
-  function StringScanner($str) {
+  function __construct($str) {
     $this->string = $str;
     $this->length = strlen($str);
 
